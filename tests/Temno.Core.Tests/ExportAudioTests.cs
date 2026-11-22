@@ -152,6 +152,7 @@ public sealed class ExportAudioTests
     {
         if (!IsFfmpegAvailable()) return;
         if (!FfmpegEncoderCapabilities.IsEncoderAvailable("hevc_nvenc")) return;
+        if (!await EncoderOpensAsync("hevc_nvenc")) return;
 
         var tempDirectory = CreateTempDirectory();
         try
@@ -671,6 +672,23 @@ public sealed class ExportAudioTests
         var stderr = await stderrTask;
         if (process.ExitCode != 0)
             throw new InvalidOperationException($"FFmpeg fixture generation failed: {stderr}");
+    }
+
+    // Temno's FFmpeg lists hevc_nvenc on every PC, because the encoder is compiled in. Only a PC with an NVIDIA GPU and
+    // its driver can open it. Where it cannot, the exporter falls back to software, as it should, and a test that
+    // expects NVENC has nothing to check. The public repository's CI runner is such a machine.
+    private static async Task<bool> EncoderOpensAsync(string encoder)
+    {
+        try
+        {
+            await RunFfmpegAsync(
+                $"-hide_banner -v error -f lavfi -i testsrc=duration=0.2:size=1280x720:rate=30 -pix_fmt yuv420p -c:v {encoder} -f null -");
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 
     private static string CreateTempDirectory()
