@@ -199,7 +199,11 @@ public sealed class SequentialFrameSourceTests
             cancelled.Cancel();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => preferred.ReadFrameAsync(cancelled.Token));
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            if (File.Exists(path))
+                try { File.Delete(path); } catch { /* ignore */ }
+        }
     }
 
     [Fact]
