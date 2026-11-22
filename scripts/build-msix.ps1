@@ -180,8 +180,8 @@ if ($null -eq $ffmpegPin -or $null -eq $ffmpegPin.Files) {
 $ffmpegNotices = Get-TemnoFfmpegNoticesPath -Pin $ffmpegPin
 
 $vcRuntimeDir = Join-Path $repoRoot 'tools\vcruntime'
-Copy-TemnoVcRuntime -Destination $vcRuntimeDir
-Write-Host "VC++ runtime staged: $vcRuntimeDir" -ForegroundColor DarkGray
+$vcRuntime = Copy-TemnoVcRuntime -Destination $vcRuntimeDir
+Write-Host "VC++ runtime staged ($($vcRuntime.Version)): $vcRuntimeDir" -ForegroundColor DarkGray
 
 if ($Clean -and (Test-Path -LiteralPath $fullOutputDirectory)) {
     $artifactsRoot = [System.IO.Path]::GetFullPath((Join-Path $repoRoot 'artifacts'))
@@ -270,7 +270,7 @@ $verifyPackageScript = Join-Path $PSScriptRoot 'verify-msix-package.ps1'
 $packagedWhisperInfo = Assert-TemnoWhisperPackageEntry -PackagePath $package.FullName
 Assert-TemnoFfmpegPackage -PackagePath $package.FullName -Pin $ffmpegPin
 Assert-TemnoPackageRootNotices -PackagePath $package.FullName -RepoRoot $repoRoot -FfmpegNoticesPath $ffmpegNotices
-Assert-TemnoVcRuntimePackaged -PackagePath $package.FullName
+$packagedVcRuntime = Assert-TemnoVcRuntimePackaged -PackagePath $package.FullName -ExpectedHashes $vcRuntime.Files
 # Checked before signing, so a package whose compiled environment disagrees is never signed.
 Assert-TemnoArtifactEnvironment -Path $package.FullName -Environment $Environment -Label 'Built MSIX' | Out-Null
 
@@ -328,6 +328,7 @@ $result = [pscustomobject]@{
     FfmpegSourceCommit = $ffmpegPin.SourceCommit
     FfmpegSourceSha256 = $ffmpegPin.SourceSha256
     FfmpegBuildImage = $ffmpegPin.BuildImage
+    VcRuntimeVersion = $packagedVcRuntime.Version
 }
 
 Write-Host "Environment: $Environment ($((Get-TemnoDeployTarget -DeployProfile $deployProfile -Service App).Description))" -ForegroundColor DarkGray

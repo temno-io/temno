@@ -9,7 +9,7 @@
 #   .\scripts\build-zip.ps1 -Official        Temno's own release: About shows no "Built from source"
 #   .\scripts\build-zip.ps1 -Verify <zip>    checks an existing ZIP and builds nothing
 #
-# Needs Windows x64, the .NET 10 SDK, PowerShell 7 and the Visual C++ runtime this script pins.
+# Needs Windows x64, the .NET 10 SDK, PowerShell 7 and a Microsoft-signed x64 Visual C++ runtime (14.40 or newer).
 [CmdletBinding()]
 param(
     # Where the ZIP is written; artifacts\zip when empty. Only the file Temno-win-x64.zip is replaced there: the
@@ -48,7 +48,9 @@ function Assert-TemnoZipPayload {
         $FfmpegPin,
 
         [Parameter(Mandatory)]
-        [string]$FfmpegNoticesPath
+        [string]$FfmpegNoticesPath,
+
+        [System.Collections.IDictionary]$ExpectedVcRuntimeHashes = $null
     )
 
     $stamp = Get-TemnoAppZipStamp -PackagePath $PackagePath
@@ -94,7 +96,7 @@ function Assert-TemnoZipPayload {
     $whisper = Assert-TemnoWhisperPackageEntry -PackagePath $PackagePath
     Assert-TemnoFfmpegPackage -PackagePath $PackagePath -Pin $FfmpegPin
     Assert-TemnoPackageRootNotices -PackagePath $PackagePath -RepoRoot $repoRoot -FfmpegNoticesPath $FfmpegNoticesPath
-    Assert-TemnoVcRuntimePackaged -PackagePath $PackagePath
+    $vcRuntime = Assert-TemnoVcRuntimePackaged -PackagePath $PackagePath -ExpectedHashes $ExpectedVcRuntimeHashes
 
     $file = Get-Item -LiteralPath $PackagePath
     return [pscustomobject]@{
@@ -109,7 +111,7 @@ function Assert-TemnoZipPayload {
         WhisperModelSha256 = $whisper.Sha256
         FfmpegVersion = $FfmpegPin.Version
         FfmpegSourceCommit = $FfmpegPin.SourceCommit
-        VcRuntimeVersion = $script:TemnoVcRuntimeVersion
+        VcRuntimeVersion = $vcRuntime.Version
     }
 }
 
@@ -161,8 +163,8 @@ Write-Host "Whisper model verified: $($whisperModelInfo.Bytes) bytes, SHA-256 $(
 
 # Temno.App.csproj ships the runtime only when this folder holds it, so a clean clone would publish without it.
 $vcRuntimeDir = Join-Path $repoRoot 'tools\vcruntime'
-Copy-TemnoVcRuntime -Destination $vcRuntimeDir
-Write-Host "VC++ runtime staged: $vcRuntimeDir" -ForegroundColor DarkGray
+$vcRuntime = Copy-TemnoVcRuntime -Destination $vcRuntimeDir
+Write-Host "VC++ runtime staged ($($vcRuntime.Version)): $vcRuntimeDir" -ForegroundColor DarkGray
 
 # The version Temno.Core compiles in and compares the update feed with: Temno.Release.props in a release commit of
 # the public repository, otherwise the manifest's. About shows the same number.
@@ -212,7 +214,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 # Checked under a name nobody uploads, so a ZIP that fails is never left as Temno-win-x64.zip.
 try {
-    $result = Assert-TemnoZipPayload -PackagePath $buildingPath -FfmpegPin $ffmpegPin -FfmpegNoticesPath $ffmpegNotices
+    $result = Assert-TemnoZipPayload -PackagePath $buildingPath -FfmpegPin $ffmpegPin -FfmpegNoticesPath $ffmpegNotices -ExpectedVcRuntimeHashes $vcRuntime.Files
     if ($result.Version -ne $version -or $result.Official -ne [bool]$Official) {
         throw "The ZIP's Temno.Core says version $($result.Version), official $($result.Official); this run built $version, official $([bool]$Official)."
     }

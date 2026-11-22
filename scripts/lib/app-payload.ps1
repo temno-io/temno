@@ -282,27 +282,215 @@ namespace Temno.Packaging {
     return @([Temno.Packaging.PeImports]::Read($Stream, $Length))
 }
 
+# ONNX Runtime crashes with msvcp140 older than 14.40. The five app-local DLLs come from the
+# build machine's Visual C++ 2015-2022/2026 redistributable (System32). Rather than pinning one
+# workstation's patch build (which breaks CI runners and other Windows PCs whenever Microsoft
+# updates the redistributable), every staged and packaged DLL must be a valid Microsoft-signed
+# x64 binary of the 14.x series at or above 14.40.0 whose OriginalFilename matches, and the
+# built package must carry the exact bytes staged for that build.
+$script:TemnoVcRuntimeFiles = @(
+    'vcruntime140.dll',
+    'vcruntime140_1.dll',
+    'msvcp140.dll',
+    'msvcp140_1.dll',
+    'vcomp140.dll'
+)
+$script:TemnoVcRuntimeCrtFiles = @(
+    'vcruntime140.dll',
+    'vcruntime140_1.dll',
+    'msvcp140.dll',
+    'msvcp140_1.dll'
+)
+$script:TemnoVcRuntimeFloor = [version]'14.40.0.0'
+$script:TemnoPeMachineAmd64 = 0x8664
+
+function Get-TemnoPeMachine {
+    param([Parameter(Mandatory)][string]$Path)
+
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        if ($stream.Length -lt 64) { return 0 }
+        $reader = New-Object System.IO.BinaryReader($stream)
+        try {
+            $dos = $reader.ReadBytes(64)
+            if ($dos.Length -ne 64 -or $dos[0] -ne 0x4D -or $dos[1] -ne 0x5A) { return 0 }
+            $peOffset = [BitConverter]::ToInt32($dos, 0x3C)
+            if ($peOffset -lt 64 -or ($peOffset + 6) -gt $stream.Length) { return 0 }
+            [void]$stream.Seek($peOffset, [System.IO.SeekOrigin]::Begin)
+            $pe = $reader.ReadBytes(6)
+            if ($pe.Length -ne 6 -or $pe[0] -ne 0x50 -or $pe[1] -ne 0x45 -or $pe[2] -ne 0 -or $pe[3] -ne 0) { return 0 }
+            return [int][BitConverter]::ToUInt16($pe, 4)
+        }
+        finally {
+            $reader.Dispose()
+        }
+    }
+    finally {
+        $stream.Dispose()
+    }
+}
+
+function Get-TemnoX500RdnValues {
+    param(
+        [Parameter(Mandatory)][System.Security.Cryptography.X509Certificates.X500DistinguishedName]$Name,
+        [Parameter(Mandatory)][string]$Oid,
+        [Parameter(Mandatory)][string]$Prefix
+    )
+
+    $values = New-Object 'System.Collections.Generic.List[string]'
+    if ($Name.PSObject.Methods.Name -contains 'EnumerateRelativeDistinguishedNames') {
+        foreach ($rdn in $Name.EnumerateRelativeDistinguishedNames()) {
+            if ($rdn.HasMultipleElements) { continue }
+            if ($rdn.GetSingleElementType().Value -ceq $Oid) {
+                $value = $rdn.GetSingleElementValue()
+                if ($null -ne $value) { [void]$values.Add($value) }
+            }
+        }
+        return , $values.ToArray()
+    }
+
+    foreach ($line in ($Name.Format($true) -split "`r?`n")) {
+        $trimmed = $line.Trim()
+        if ($trimmed.StartsWith("$Prefix=", [StringComparison]::Ordinal)) {
+            [void]$values.Add($trimmed.Substring($Prefix.Length + 1).Trim('"'))
+        }
+    }
+    return , $values.ToArray()
+}
+
+function Assert-TemnoVcRuntimeFile {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$ExpectedName
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw "VC++ runtime '$Path' does not exist."
+    }
+
+    $machine = Get-TemnoPeMachine -Path $Path
+    if ($machine -ne $script:TemnoPeMachineAmd64) {
+        $hex = ('0x{0:X4}' -f $machine)
+        throw "VC++ runtime $ExpectedName ('$Path') is not an x64 PE image (machine $hex)."
+    }
+
+    $info = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($Path)
+    $parsed = [version]::new($info.FileMajorPart, $info.FileMinorPart, $info.FileBuildPart, $info.FilePrivatePart)
+    if ($parsed.Major -ne 14 -or $parsed -lt $script:TemnoVcRuntimeFloor) {
+        throw "VC++ runtime $ExpectedName is '$($info.FileVersion)' ($parsed). ONNX Runtime requires Microsoft VC++ 14.x at or above 14.40.0."
+    }
+
+    if ([string]::IsNullOrWhiteSpace($info.OriginalFilename) -or $info.OriginalFilename -ine $ExpectedName) {
+        throw "VC++ runtime $ExpectedName ('$Path') has OriginalFilename '$($info.OriginalFilename)'; expected '$ExpectedName'."
+    }
+
+    $sig = Get-AuthenticodeSignature -LiteralPath $Path
+    if ($null -eq $sig -or $sig.Status -ne 'Valid') {
+        $status = if ($null -eq $sig) { 'Missing' } else { "$($sig.Status): $($sig.StatusMessage)" }
+        throw "VC++ runtime $ExpectedName ('$Path') failed Authenticode verification ($status)."
+    }
+    if ($sig.SignatureType -notin @('Authenticode', 'Catalog')) {
+        throw "VC++ runtime $ExpectedName ('$Path') has unsupported signature type '$($sig.SignatureType)'."
+    }
+    if ($null -eq $sig.SignerCertificate) {
+        throw "VC++ runtime $ExpectedName ('$Path') signature carries no signer certificate."
+    }
+
+    $subjectOrgs = @(Get-TemnoX500RdnValues -Name $sig.SignerCertificate.SubjectName -Oid '2.5.4.10' -Prefix 'O')
+    $subjectCns = @(Get-TemnoX500RdnValues -Name $sig.SignerCertificate.SubjectName -Oid '2.5.4.3' -Prefix 'CN')
+    $issuerOrgs = @(Get-TemnoX500RdnValues -Name $sig.SignerCertificate.IssuerName -Oid '2.5.4.10' -Prefix 'O')
+    if ($subjectOrgs.Count -ne 1 -or $subjectOrgs[0] -cne 'Microsoft Corporation' -or
+        $subjectCns.Count -ne 1 -or $subjectCns[0] -cnotmatch '^Microsoft(\b| )' -or
+        $issuerOrgs.Count -ne 1 -or $issuerOrgs[0] -cne 'Microsoft Corporation') {
+        throw "VC++ runtime $ExpectedName ('$Path') is not signed by Microsoft Corporation (subject: '$($sig.SignerCertificate.Subject)'; issuer: '$($sig.SignerCertificate.Issuer)')."
+    }
+
+    $hash = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+    return [pscustomobject]@{
+        Name = $ExpectedName
+        Version = $parsed.ToString()
+        ParsedVersion = $parsed
+        Sha256 = $hash
+    }
+}
+
+function Assert-TemnoVcRuntimeSetConsistent {
+    param([Parameter(Mandatory)][hashtable]$CheckedFiles)
+
+    $crtPairs = @($script:TemnoVcRuntimeCrtFiles | ForEach-Object {
+        $v = $CheckedFiles[$_].ParsedVersion
+        "$($v.Major).$($v.Minor)"
+    } | Sort-Object -Unique)
+    if ($crtPairs.Count -ne 1) {
+        $detail = @($script:TemnoVcRuntimeCrtFiles | ForEach-Object { "$_=$($CheckedFiles[$_].Version)" }) -join ', '
+        throw "VC++ CRT runtime DLLs disagree on minor version ($detail)."
+    }
+
+    $distinctVersions = @($script:TemnoVcRuntimeFiles | ForEach-Object { $CheckedFiles[$_].Version } | Sort-Object -Unique)
+    $hashes = [ordered]@{}
+    foreach ($name in $script:TemnoVcRuntimeFiles) {
+        $hashes[$name] = $CheckedFiles[$name].Sha256
+    }
+
+    return [pscustomobject]@{
+        Version = ($distinctVersions -join ', ')
+        Files = $hashes
+    }
+}
+
 function Assert-TemnoVcRuntimePackaged {
-    param([Parameter(Mandatory)][string]$PackagePath)
+    param(
+        [Parameter(Mandatory)][string]$PackagePath,
+        [System.Collections.IDictionary]$ExpectedHashes = $null
+    )
 
     Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $extractDir = Join-Path ([System.IO.Path]::GetTempPath()) ('temno-vcruntime-verify-' + [Guid]::NewGuid().ToString('N'))
     $archive = [System.IO.Compression.ZipFile]::OpenRead($PackagePath)
     try {
         $present = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
         foreach ($entry in $archive.Entries) {
-            $file = [System.IO.Path]::GetFileName($entry.FullName)
-            if (Test-TemnoVcRuntimeDllName $file) { [void]$present.Add($file) }
-        }
-        foreach ($name in @($script:TemnoVcRuntimeSha256.Keys)) {
-            $pinned = Get-TemnoMsixEntry -Archive $archive -EntryName $name
-            if ($null -eq $pinned) {
-                throw "Package '$PackagePath' does not contain the pinned VC++ runtime $name."
-            }
-            $actualHash = Get-TemnoMsixEntrySha256 -Entry $pinned
-            if ($actualHash -ne $script:TemnoVcRuntimeSha256[$name]) {
-                throw "Packaged $name SHA-256 is $actualHash; the pin is $($script:TemnoVcRuntimeSha256[$name])."
+            $normalized = $entry.FullName.Replace('\', '/')
+            if ($normalized -notlike '*/*' -and (Test-TemnoVcRuntimeDllName $normalized)) {
+                [void]$present.Add($normalized)
             }
         }
+
+        New-Item -ItemType Directory -Path $extractDir -Force | Out-Null
+        $checked = @{}
+        foreach ($name in $script:TemnoVcRuntimeFiles) {
+            $matches = @($archive.Entries | Where-Object { (Get-TemnoZipEntryExtractedName -FullName $_.FullName) -ieq $name })
+            if ($matches.Count -eq 0) {
+                throw "Package '$PackagePath' does not contain required VC++ runtime $name."
+            }
+            if ($matches.Count -gt 1 -or $matches[0].FullName -ine $name) {
+                throw "Package '$PackagePath' must contain exactly one root entry for VC++ runtime $name."
+            }
+
+            $extractedPath = Join-Path $extractDir $name
+            $entryStream = $matches[0].Open()
+            try {
+                $fileStream = [System.IO.File]::Open($extractedPath, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+                try { $entryStream.CopyTo($fileStream) }
+                finally { $fileStream.Dispose() }
+            }
+            finally {
+                $entryStream.Dispose()
+            }
+
+            $info = Assert-TemnoVcRuntimeFile -Path $extractedPath -ExpectedName $name
+            if ($null -ne $ExpectedHashes) {
+                if (-not $ExpectedHashes.Contains($name)) {
+                    throw "Expected VC++ runtime hash manifest is missing $name."
+                }
+                if ($info.Sha256 -ne $ExpectedHashes[$name]) {
+                    throw "Packaged $name SHA-256 is $($info.Sha256); staged file was $($ExpectedHashes[$name])."
+                }
+            }
+            $checked[$name] = $info
+        }
+
+        $manifest = Assert-TemnoVcRuntimeSetConsistent -CheckedFiles $checked
 
         $missing = New-Object System.Collections.Generic.List[string]
         foreach ($entry in @($archive.Entries)) {
@@ -325,43 +513,52 @@ function Assert-TemnoVcRuntimePackaged {
         if ($missing.Count -gt 0) {
             throw "Package '$PackagePath' imports Visual C++ runtime DLLs it does not contain:`n$($missing -join "`n")"
         }
-    }
-    finally { $archive.Dispose() }
-}
 
-# ONNX Runtime crashes with msvcp140 older than 14.40. This package pins the
-# 14.51.36247.0 files from the build machine and refuses any other version.
-$script:TemnoVcRuntimeVersion = '14.51.36247.0'
-$script:TemnoVcRuntimeFloor = [version]'14.40.0'
-$script:TemnoVcRuntimeSha256 = @{
-    'vcruntime140.dll' = 'D1F4225DF2CD877DBF130D5668A021DCE3F94118455FF5EC952061C30AFC9CE7'
-    'vcruntime140_1.dll' = 'A7146C08F89FE5B04541AB507CDB59FF7B44534D4BA3C668A426C6450A03434E'
-    'msvcp140.dll' = '7C26614E1D733892C2DEAC7E245CE115504B1D80592DD0A01B08E3E5A55F89CA'
-    'msvcp140_1.dll' = '206C931BF90FDAD8816DE3B5E2EF80B2BCAA9406C89ECC05FE6FDDFFE251E982'
-    'vcomp140.dll' = '95D4CE4A6802D1E18B5E0E1722CC30EA72CA7E033F83828F05C0B7B993FE7CBF'
+        return $manifest
+    }
+    finally {
+        $archive.Dispose()
+        if (Test-Path -LiteralPath $extractDir) {
+            Remove-Item -LiteralPath $extractDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 function Copy-TemnoVcRuntime {
-    param([Parameter(Mandatory)][string]$Destination)
-    New-Item -ItemType Directory -Path $Destination -Force | Out-Null
-    foreach ($name in $script:TemnoVcRuntimeSha256.Keys) {
-        $source = Join-Path $env:SystemRoot "System32\$name"
-        if (-not (Test-Path -LiteralPath $source)) {
-            throw "VC++ runtime '$source' is not on this machine, so the package cannot bundle it."
+    param(
+        [Parameter(Mandatory)][string]$Destination,
+        # Optional source directory override for offline tests; defaults to System32.
+        [string]$SourceDirectory
+    )
+
+    if ([string]::IsNullOrWhiteSpace($SourceDirectory)) {
+        $SourceDirectory = Join-Path $env:SystemRoot 'System32'
+    }
+
+    $staging = Join-Path ([System.IO.Path]::GetTempPath()) ('temno-vcruntime-stage-' + [Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $staging -Force | Out-Null
+    try {
+        $checked = @{}
+        foreach ($name in $script:TemnoVcRuntimeFiles) {
+            $source = Join-Path $SourceDirectory $name
+            if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+                throw "VC++ runtime '$source' is not on this machine, so the package cannot bundle it. Install the Microsoft Visual C++ Redistributable (x64) (14.40 or newer)."
+            }
+            $stagedFile = Join-Path $staging $name
+            Copy-Item -LiteralPath $source -Destination $stagedFile -Force
+            $checked[$name] = Assert-TemnoVcRuntimeFile -Path $stagedFile -ExpectedName $name
         }
-        $info = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($source)
-        $parsed = $null
-        if (-not [version]::TryParse($info.FileVersion, [ref]$parsed) -or $parsed -lt $script:TemnoVcRuntimeFloor) {
-            throw "VC++ runtime $name is '$($info.FileVersion)'. ONNX Runtime crashes with msvcp140 below 14.40."
+
+        $manifest = Assert-TemnoVcRuntimeSetConsistent -CheckedFiles $checked
+        New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+        foreach ($name in $script:TemnoVcRuntimeFiles) {
+            Copy-Item -LiteralPath (Join-Path $staging $name) -Destination (Join-Path $Destination $name) -Force
         }
-        if ($info.FileVersion -ne $script:TemnoVcRuntimeVersion) {
-            throw "VC++ runtime $name is $($info.FileVersion); this package pins $($script:TemnoVcRuntimeVersion)."
-        }
-        $dest = Join-Path $Destination $name
-        Copy-Item -LiteralPath $source -Destination $dest -Force
-        $hash = (Get-FileHash -LiteralPath $dest -Algorithm SHA256).Hash
-        if ($hash -ne $script:TemnoVcRuntimeSha256[$name]) {
-            throw "VC++ runtime $name SHA-256 is $hash; the pin is $($script:TemnoVcRuntimeSha256[$name])."
+        return $manifest
+    }
+    finally {
+        if (Test-Path -LiteralPath $staging) {
+            Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
 }
