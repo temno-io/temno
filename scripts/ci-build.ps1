@@ -86,9 +86,11 @@ Invoke-Step 'environment-check' {
 if (-not $SkipTests) {
     $results = Join-Path $out 'test-results'
     # The tests run as a development build, so they never touch an installed Temno's data.
+    # --blame-hang-timeout bounds any stalled test at 2 minutes and logs the active test name instead of hanging CI.
     Invoke-Step 'core-tests' {
         dotnet test tests/Temno.Core.Tests -c Release -p:TemnoEnvironment=development -p:RestoreLockedMode=true --nologo `
             --settings tests/Temno.Core.Tests/serial.runsettings `
+            --blame-hang-timeout 2m --blame-hang-dump-type none `
             --logger 'trx;LogFileName=core.trx' --results-directory $results
     }
 }

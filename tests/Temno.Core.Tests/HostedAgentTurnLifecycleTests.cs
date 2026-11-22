@@ -353,7 +353,9 @@ public sealed class HostedAgentTurnLifecycleTests
                 started.TrySetResult();
                 Thread.Yield();
             }));
-            await started.Task;
+            var first = await Task.WhenAny(started.Task, send).WaitAsync(TimeSpan.FromSeconds(30));
+            if (ReferenceEquals(first, send))
+                await send;
             for (var i = 0; i < 250; i++)
             {
                 var snapshot = ChatSessionStore.Snapshot(conversation.Session);
@@ -362,12 +364,16 @@ public sealed class HostedAgentTurnLifecycleTests
                 Assert.Equal(strings, snapshot.Messages.SelectMany(m => m.Blocks).Select(b => b.Text));
                 Assert.All(snapshot.Messages, m => Assert.NotEmpty(m.Blocks));
             }
-            await send;
+            await send.WaitAsync(TimeSpan.FromSeconds(30));
             var saved = Assert.Single(ChatSessionStore.Load(folder));
             Assert.True(saved.Hosted!.Terminal);
             Assert.Equal(conversation.Session.Hosted!.LastEventId, saved.Hosted.LastEventId);
         }
-        finally { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
+        finally
+        {
+            if (Directory.Exists(folder))
+                try { Directory.Delete(folder, true); } catch { /* best effort */ }
+        }
     }
 
     [Fact]

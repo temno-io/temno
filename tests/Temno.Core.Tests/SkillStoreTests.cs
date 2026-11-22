@@ -720,7 +720,10 @@ public sealed class SkillStoreTests : IDisposable
         start.ArgumentList.Add(link);
         start.ArgumentList.Add(target);
         using var process = Process.Start(start)!;
-        process.WaitForExit();
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+        Assert.True(process.WaitForExit(10_000), "mklink /J timed out.");
+        Task.WaitAll(stdoutTask, stderrTask);
         Assert.Equal(0, process.ExitCode);
         _junctions.Add(link);
     }

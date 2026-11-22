@@ -40,6 +40,21 @@ public sealed class CompositorThroughputBudgetTests
     /// </summary>
     public const double OneToOne720pBudgetMs = 40.0;
 
+    /// <summary>
+    /// The baseline constants above were calibrated on an 8+ core desktop CPU (where CpuCompositor's
+    /// parallel scanlines run 4K->1080p in ~10.2 ms). On lower-core hosts (&lt; 8 logical CPUs) or shared
+    /// CI VMs (e.g. 4-vCPU runners with hypervisor jitter), scale the wall-clock ceiling while keeping
+    /// the baseline strict on 8+ core local machines.
+    /// </summary>
+    private static double EffectiveBudgetMs(double baselineMs)
+    {
+        var cores = Math.Max(1, Environment.ProcessorCount);
+        var coreScale = cores < 8 ? 8.0 / cores : 1.0;
+        var isCi = string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
+        var scale = isCi ? Math.Max(coreScale, 2.5) : coreScale;
+        return baselineMs * scale;
+    }
+
     private static VideoFrame GradientFrame(int w, int h)
     {
         var data = new byte[w * h * 4];
@@ -76,8 +91,9 @@ public sealed class CompositorThroughputBudgetTests
     {
         using var src = GradientFrame(3840, 2160);
         var best = BestOfMs(src, 1920, 1080);
-        Assert.True(best < FourKToHdBudgetMs,
-            $"4K->1080p composite took {best:F1} ms/frame (best of 5), budget {FourKToHdBudgetMs} ms.");
+        var budget = EffectiveBudgetMs(FourKToHdBudgetMs);
+        Assert.True(best < budget,
+            $"4K->1080p composite took {best:F1} ms/frame (best of 5), budget {budget:F1} ms ({Environment.ProcessorCount} logical CPUs).");
     }
 
     [Fact]
@@ -85,8 +101,9 @@ public sealed class CompositorThroughputBudgetTests
     {
         using var src = GradientFrame(1280, 720);
         var best = BestOfMs(src, 1920, 1080);
-        Assert.True(best < HdUpscaleBudgetMs,
-            $"720p->1080p composite took {best:F1} ms/frame (best of 5), budget {HdUpscaleBudgetMs} ms.");
+        var budget = EffectiveBudgetMs(HdUpscaleBudgetMs);
+        Assert.True(best < budget,
+            $"720p->1080p composite took {best:F1} ms/frame (best of 5), budget {budget:F1} ms ({Environment.ProcessorCount} logical CPUs).");
     }
 
     [Fact]
@@ -94,8 +111,9 @@ public sealed class CompositorThroughputBudgetTests
     {
         using var src = GradientFrame(1280, 720);
         var best = BestOfMs(src, 1280, 720);
-        Assert.True(best < OneToOne720pBudgetMs,
-            $"720p 1:1 composite took {best:F1} ms/frame (best of 5), budget {OneToOne720pBudgetMs} ms.");
+        var budget = EffectiveBudgetMs(OneToOne720pBudgetMs);
+        Assert.True(best < budget,
+            $"720p 1:1 composite took {best:F1} ms/frame (best of 5), budget {budget:F1} ms ({Environment.ProcessorCount} logical CPUs).");
     }
 
     [Fact]

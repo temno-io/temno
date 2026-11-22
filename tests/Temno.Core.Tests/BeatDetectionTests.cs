@@ -370,8 +370,9 @@ public class BeatDetectionTests
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.RedirectStandardOutput = true;
             process.Start();
-            process.WaitForExit(5000);
-            return process.ExitCode == 0;
+            _ = process.StandardOutput.ReadToEndAsync();
+            _ = process.StandardError.ReadToEndAsync();
+            return process.WaitForExit(5000) && process.ExitCode == 0;
         }
         catch
         {
@@ -395,7 +396,7 @@ public class BeatDetectionTests
             await File.WriteAllBytesAsync(pcmPath, bytes);
 
             var arguments =
-                $"-y -f f32le -ar {SampleRate} -ac 1 -i \"{pcmPath}\" -c:a pcm_s16le \"{tempPath}\"";
+                $"-hide_banner -loglevel error -y -f f32le -ar {SampleRate} -ac 1 -i \"{pcmPath}\" -c:a pcm_s16le \"{tempPath}\"";
 
             using var process = new Process();
             process.StartInfo.FileName = ffmpegPath;
@@ -410,10 +411,22 @@ public class BeatDetectionTests
                 throw new InvalidOperationException("Failed to start ffmpeg for click wav.");
             }
 
-            await process.WaitForExitAsync();
+            // Drain stdout and stderr concurrently before awaiting exit, or a full 4 KiB pipe buffer deadlocks ffmpeg.
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+            try
+            {
+                await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(30));
+            }
+            catch (TimeoutException)
+            {
+                try { process.Kill(entireProcessTree: true); } catch { }
+                throw;
+            }
+            await stdoutTask;
+            var err = await stderrTask;
             if (process.ExitCode != 0)
             {
-                var err = await process.StandardError.ReadToEndAsync();
                 throw new InvalidOperationException($"ffmpeg failed: {err}");
             }
 

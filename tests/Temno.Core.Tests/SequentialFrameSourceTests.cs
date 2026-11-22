@@ -29,8 +29,9 @@ public sealed class SequentialFrameSourceTests
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.RedirectStandardOutput = true;
             process.Start();
-            process.WaitForExit(10_000);
-            return process.ExitCode == 0;
+            _ = process.StandardOutput.ReadToEndAsync();
+            _ = process.StandardError.ReadToEndAsync();
+            return process.WaitForExit(10_000) && process.ExitCode == 0;
         }
         catch
         {
@@ -156,9 +157,11 @@ public sealed class SequentialFrameSourceTests
             duplicateWatch.Stop();
 
             Assert.Equal(firstBytes, duplicate.Data);
+            Assert.Equal(1, sequential.RestartCount);
+            var duplicateBudgetMs = string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase) ? 250 : 80;
             Assert.True(
-                duplicateWatch.ElapsedMilliseconds < 80,
-                $"Duplicate timestamp took {duplicateWatch.ElapsedMilliseconds}ms; a decoder restart would be hundreds.");
+                duplicateWatch.ElapsedMilliseconds < duplicateBudgetMs,
+                $"Duplicate timestamp took {duplicateWatch.ElapsedMilliseconds}ms (budget {duplicateBudgetMs}ms); a decoder restart would be hundreds.");
 
             using var next = await sequential.GetFrameAsync(path, 1 / 30.0);
             Assert.NotEqual(firstBytes, next.Data);

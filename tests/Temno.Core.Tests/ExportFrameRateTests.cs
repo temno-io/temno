@@ -295,8 +295,9 @@ internal static class FfmpegFixture
                 CreateNoWindow = true,
             });
             if (probe is null) return false;
-            probe.WaitForExit(10_000);
-            return probe.ExitCode == 0;
+            _ = probe.StandardOutput.ReadToEndAsync();
+            _ = probe.StandardError.ReadToEndAsync();
+            return probe.WaitForExit(10_000) && probe.ExitCode == 0;
         }
         catch { return false; }
     }
@@ -397,10 +398,21 @@ internal static class FfmpegFixture
         foreach (var argument in arguments)
             info.ArgumentList.Add(argument);
         using var process = Process.Start(info) ?? throw new InvalidOperationException("Failed to start ffmpeg.");
+        var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
+        try
+        {
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(60));
+        }
+        catch (TimeoutException)
+        {
+            try { process.Kill(entireProcessTree: true); } catch { }
+            throw;
+        }
+        await stdout;
+        var err = await stderr;
         if (process.ExitCode != 0)
-            throw new InvalidOperationException($"ffmpeg fixture failed: {await stderr}");
+            throw new InvalidOperationException($"ffmpeg fixture failed: {err}");
     }
 
     public static async Task RunAsync(string arguments)
@@ -412,9 +424,20 @@ internal static class FfmpegFixture
             RedirectStandardError = true,
             CreateNoWindow = true,
         }) ?? throw new InvalidOperationException("Failed to start ffmpeg.");
+        var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
+        try
+        {
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(60));
+        }
+        catch (TimeoutException)
+        {
+            try { process.Kill(entireProcessTree: true); } catch { }
+            throw;
+        }
+        await stdout;
+        var err = await stderr;
         if (process.ExitCode != 0)
-            throw new InvalidOperationException($"ffmpeg fixture failed: {await stderr}");
+            throw new InvalidOperationException($"ffmpeg fixture failed: {err}");
     }
 }

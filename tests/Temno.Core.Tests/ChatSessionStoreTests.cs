@@ -405,7 +405,9 @@ public sealed class AnthropicClientTests
             runner,
             cancellationToken: cts.Token);
 
-        await runner.Started.Task;
+        var first = await Task.WhenAny(runner.Started.Task, send).WaitAsync(TimeSpan.FromSeconds(15));
+        if (ReferenceEquals(first, send))
+            await send;
         cts.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => send);
@@ -441,7 +443,9 @@ public sealed class AnthropicClientTests
             [new AnthropicToolSchema { Name = "get_timeline", Description = "Read", InputSchema = new JsonObject { ["type"] = "object" } }],
             runner,
             cancellationToken: cts.Token);
-        await runner.Started.Task;
+        var first = await Task.WhenAny(runner.Started.Task, send).WaitAsync(TimeSpan.FromSeconds(15));
+        if (ReferenceEquals(first, send))
+            await send;
         cts.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => send);
 

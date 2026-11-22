@@ -630,8 +630,11 @@ public sealed class ExternalMediaAccessTests : IDisposable
         foreach (var arg in new[] { "/c", "mklink", "/J", link, target })
             start.ArgumentList.Add(arg);
         using var process = System.Diagnostics.Process.Start(start)!;
-        var output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
-        process.WaitForExit();
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+        if (!process.WaitForExit(10_000))
+            throw new TimeoutException("mklink /J timed out.");
+        var output = stdoutTask.GetAwaiter().GetResult() + stderrTask.GetAwaiter().GetResult();
         if (process.ExitCode != 0)
             throw new InvalidOperationException($"mklink /J failed ({process.ExitCode}): {output}");
         _junctions.Add(link);

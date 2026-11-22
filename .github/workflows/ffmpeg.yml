@@ -1,0 +1,50 @@
+name: FFmpeg from source
+
+# The build restores FFmpeg as the NuGet package Temno.FFmpeg.Runtime.win-x64. This workflow rebuilds it from source
+# and fails unless every file equals its pin in scripts/ffmpeg/Temno.FFmpeg.targets, the same pins the build checks
+# the package against. It does the same for Temno.FFmpeg.Runtime.linux-x64, the hosted services' build, against
+# scripts/ffmpeg/Temno.FFmpeg.linux-x64.targets. It runs when scripts/ffmpeg/ changes, on release tags (v* via ci.yml),
+# or on manual dispatch.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/ffmpeg/**'
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ffmpeg-from-source:
+    name: Rebuild FFmpeg (${{ matrix.rid }}) from source and compare with the pins
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [win-x64, linux-x64]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Make room for the 9.4 GB build image
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift
+          df -h /
+      - name: Build FFmpeg 9.1-temno1 in the digest-pinned image and compare every file
+        shell: pwsh
+        run: ./scripts/ffmpeg/build-ffmpeg.ps1 -Rid ${{ matrix.rid }} -OutDir artifacts/ffmpeg -Jobs 4
+      - name: Keep the hashes
+        if: always()
+        run: |
+          mkdir -p artifacts
+          (cd artifacts/ffmpeg 2>/dev/null && find . -type f -exec sha256sum {} + | sort -k2 > ../ffmpeg-sha256.txt) || true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: ffmpeg-from-source-${{ matrix.rid }}-${{ github.sha }}
+          path: artifacts/ffmpeg-sha256.txt
+          if-no-files-found: warn
+          retention-days: 30
