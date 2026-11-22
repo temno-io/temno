@@ -1,0 +1,21 @@
+<Project>
+  <!-- Places FFmpeg in an ffmpeg\ folder beside the referencing app, in its build output, its publish folder and
+       its MSIX. Temno finds it there first (src/Temno.Media/FFmpegResolver.cs). -->
+  <PropertyGroup>
+    <TemnoFFmpegRuntimeDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', 'ffmpeg'))</TemnoFFmpegRuntimeDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="$(TemnoFFmpegRuntimeDir)*"
+             Link="ffmpeg\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest"
+             Visible="false" />
+    <!-- WP-427: the notices for FFmpeg's permissively licensed files and the libraries it links travel with the app,
+         beside its THIRD-PARTY-NOTICES.md, which names this file. -->
+    <Content Include="$(MSBuildThisFileDirectory)..\FFMPEG-SOURCE-NOTICES.md"
+             Link="FFMPEG-SOURCE-NOTICES.md"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest"
+             Visible="false" />
+  </ItemGroup>
+</Project>

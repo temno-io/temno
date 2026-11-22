@@ -1,0 +1,13 @@
+<Project>
+  <!-- The public repository builds the app temno.io ships: a production build that signs in to Temno with your own
+       account. Directory.Build.props imports this file, which only the public repository has. Build with
+       -p:TemnoEnvironment=development to run against a backend of your own.
+       A build from here says it was built from source, in About and Send Feedback, and it updates by merging the next
+       release instead of installing Temno's package. Temno.Release.props, written into each release commit, names
+       the version that commit is released as. -->
+  <Import Project="$(MSBuildThisFileDirectory)Temno.Release.props" Condition="Exists('$(MSBuildThisFileDirectory)Temno.Release.props')" />
+  <PropertyGroup>
+    <TemnoEnvironment Condition="'$(TemnoEnvironment)' == ''">production</TemnoEnvironment>
+    <TemnoOfficialBuild Condition="'$(TemnoOfficialBuild)' == ''">false</TemnoOfficialBuild>
+  </PropertyGroup>
+</Project>

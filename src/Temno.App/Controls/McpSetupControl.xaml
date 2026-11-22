@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Temno.App.Controls.McpSetupControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <StackPanel Spacing="{StaticResource AppTheme.Spacing.Md}">
+        <TextBlock
+            FontSize="{StaticResource AppTheme.FontSize.Xl}"
+            FontWeight="SemiBold"
+            Foreground="{StaticResource AppTheme.Text.Primary}"
+            Text="Agent connections" />
+        <TextBlock
+            FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+            Foreground="{StaticResource AppTheme.Text.Tertiary}"
+            Text="Connect an external agent to the project open in this editor."
+            TextWrapping="WrapWholeWords" />
+
+        <Border
+            Background="{StaticResource AppTheme.Background.Surface}"
+            CornerRadius="{StaticResource AppTheme.CornerRadius.Sm}"
+            Padding="{StaticResource AppTheme.Padding.Control}">
+            <Grid ColumnSpacing="{StaticResource AppTheme.Spacing.Md}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Ellipse
+                    x:Name="StatusDot"
+                    Width="{StaticResource AppTheme.ComponentSize.StatusDotSize}"
+                    Height="{StaticResource AppTheme.ComponentSize.StatusDotSize}"
+                    VerticalAlignment="Center"
+                    Fill="{StaticResource AppTheme.Text.Muted}" />
+                <TextBlock
+                    x:Name="StatusLabel"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                    TextWrapping="Wrap"
+                    Text="Stopped" />
+                <ToggleSwitch
+                    x:Name="EnabledSwitch"
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    AutomationProperties.Name="MCP Server"
+                    OffContent="Off"
+                    OnContent="On"
+                    Toggled="EnabledSwitch_Toggled"
+                    ToolTipService.ToolTip="Loopback only — do not tunnel this port" />
+            </Grid>
+        </Border>
+
+        <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xs}">
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                Text="Server URL" />
+            <TextBox
+                x:Name="EndpointBox"
+                IsReadOnly="True"
+                AutomationProperties.Name="MCP server URL"
+                FontFamily="{StaticResource AppTheme.FontFamily.Mono}"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                ToolTipService.ToolTip="Loopback only — do not tunnel this port" />
+        </StackPanel>
+
+        <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xs}">
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                Text="Access token" />
+            <Grid ColumnSpacing="{StaticResource AppTheme.Spacing.Sm}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox
+                    x:Name="TokenBox"
+                    AutomationProperties.Name="MCP token header"
+                    TextWrapping="Wrap"
+                    IsReadOnly="True"
+                    FontFamily="{StaticResource AppTheme.FontFamily.Mono}"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}" />
+                <ToggleButton
+                    x:Name="RevealToken"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Click="RevealToken_Click"
+                    Content="Reveal"
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    AutomationProperties.Name="Reveal token"
+                    ToolTipService.ToolTip="Show the token in this field and in the snippet below. Copy always copies the real value." />
+                <Button
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Click="CopyToken_Click"
+                    Content="Copy"
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    AutomationProperties.Name="Copy token header"
+                    ToolTipService.ToolTip="Copy always copies the real value" />
+                <Button
+                    Grid.Column="3"
+                    VerticalAlignment="Center"
+                    Click="RotateToken_Click"
+                    Content="New token..."
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    AutomationProperties.Name="New token"
+                    ToolTipService.ToolTip="Replaces the token immediately. Existing client configs will need the new header." />
+            </Grid>
+        </StackPanel>
+        <TextBlock
+            FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+            Foreground="{StaticResource AppTheme.Text.Tertiary}"
+            Text="The server switch and token changes apply immediately."
+            TextWrapping="WrapWholeWords" />
+
+        <TextBlock
+            x:Name="CopyStatus"
+            FontSize="{StaticResource AppTheme.FontSize.Sm}"
+            Foreground="{StaticResource AppTheme.Status.Success}"
+            Visibility="Collapsed" />
+
+        <Border BorderBrush="{StaticResource AppTheme.Border.Primary}" BorderThickness="0,1,0,0" />
+
+        <TextBlock
+            FontSize="{StaticResource AppTheme.FontSize.Md}"
+            FontWeight="SemiBold"
+            Foreground="{StaticResource AppTheme.Text.Primary}"
+            Text="Connect a client" />
+
+        <Grid ColumnSpacing="{StaticResource AppTheme.Spacing.Sm}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <ComboBox
+                x:Name="ClientPicker"
+                HorizontalAlignment="Stretch"
+                AutomationProperties.Name="MCP client"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                SelectionChanged="ClientPicker_SelectionChanged"
+                ToolTipService.ToolTip="Pick the agent to connect. Every client uses the same server and token." />
+            <Button
+                Grid.Column="1"
+                VerticalAlignment="Center"
+                Click="CopySnippet_Click"
+                Content="Copy configuration"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                AutomationProperties.Name="Copy client configuration"
+                ToolTipService.ToolTip="Copy the selected client configuration with the real token" />
+        </Grid>
+        <TextBlock
+            x:Name="SnippetIntro"
+            FontSize="{StaticResource AppTheme.FontSize.Sm}"
+            Foreground="{StaticResource AppTheme.Text.Tertiary}"
+            TextWrapping="WrapWholeWords" />
+        <TextBox
+            x:Name="SnippetBox"
+            IsReadOnly="True"
+            AcceptsReturn="True"
+            AutomationProperties.Name="MCP client configuration"
+            TextWrapping="Wrap"
+            FontFamily="{StaticResource AppTheme.FontFamily.Mono}"
+            FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+            MinHeight="{StaticResource AppTheme.ComponentSize.CodePreviewMinHeight}"
+            IsSpellCheckEnabled="False" />
+        <TextBlock
+            FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+            Foreground="{StaticResource AppTheme.Text.Tertiary}"
+            Text="Local connections only. Other clients use the same server and token."
+            TextWrapping="WrapWholeWords" />
+    </StackPanel>
+</UserControl>

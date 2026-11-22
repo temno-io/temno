@@ -1,0 +1,36 @@
+<Project>
+  <!-- WP-425: Temno's FFmpeg (9.1-temno1 since WP-442) built for Linux x64, which the Gateway runs. The Linux pins' only
+       home: build-ffmpeg.ps1 -Rid linux-x64 and pack-ffmpeg-nuget.ps1 -Rid linux-x64 read them, and the Gateway's
+       Dockerfile takes the published package by its own SHA-256. No project imports this file; the desktop's pins
+       are in Temno.FFmpeg.targets. -->
+  <PropertyGroup>
+    <TemnoFFmpegPackageId>Temno.FFmpeg.Runtime.linux-x64</TemnoFFmpegPackageId>
+    <!-- The build's version, and the package's in NuGet's normalized form (9.1 is 9.1.0). -->
+    <TemnoFFmpegVersion>9.1-temno1</TemnoFFmpegVersion>
+    <TemnoFFmpegPackageVersion>9.1.0-temno1</TemnoFFmpegPackageVersion>
+    <TemnoFFmpegSourceUrl>https://ffmpeg.org/releases/ffmpeg-9.1.tar.xz</TemnoFFmpegSourceUrl>
+    <TemnoFFmpegSourceSha256>1A4D394AE63D190A526CD052EB4415C156B5C5E2DF37EFAB41A7DE0B8FDE2433</TemnoFFmpegSourceSha256>
+    <TemnoFFmpegSourceCommit>74e4393595cf2b5857f0da925c4e0dd74ea306e5</TemnoFFmpegSourceCommit>
+    <TemnoFFmpegBuildImageDigest>sha256:274242a06b91ff977e9d16b288c3b32cf8dc5bd47bf3e8ca898a6ed486d986f8</TemnoFFmpegBuildImageDigest>
+    <!-- BtbN's image, and the copy the owner keeps in case ghcr drops it. Both are pulled by the digest above. -->
+    <TemnoFFmpegBuildImage>ghcr.io/btbn/ffmpeg-builds/linux64-gpl-shared</TemnoFFmpegBuildImage>
+    <TemnoFFmpegBuildImageArchive>ghcr.io/temno-io/btbn-ffmpeg-builds-linux64-gpl-shared</TemnoFFmpegBuildImageArchive>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Written by build-in-container-linux.sh, except source.txt, which build-ffmpeg.ps1 writes from the pins. The
+         package's ffmpeg/ folder holds these files and no other. -->
+    <TemnoFFmpegPin Include="bin/ffmpeg" Sha256="F8329F3C278294FACD8846EFCD8EBDCEC502B61CD3956B3C5E935E344B491C84" Origin="build" />
+    <TemnoFFmpegPin Include="bin/ffprobe" Sha256="C31153EFF1A4F0FCB9D898BC7D5D2AAFB20E8CC8F76826D06BEA2E3A56226CC1" Origin="build" />
+    <TemnoFFmpegPin Include="lib/libavcodec.so.63" Sha256="02CD991C20D78DBEF19CDF9E25AA6756A4ECE24A6764FD9334E3A0336AFA7286" Origin="build" />
+    <TemnoFFmpegPin Include="lib/libavdevice.so.63" Sha256="7EDB8A990CC68586BBEAC7C56937A7A765CCAD2D81F6E5C06C67B75ACEE94611" Origin="build" />
+    <TemnoFFmpegPin Include="lib/libavfilter.so.12" Sha256="D8C42BF9E72AEAEF434075629BC9797F7C06DACE10F53D8553C51848EDA344C2" Origin="build" />
+    <TemnoFFmpegPin Include="lib/libavformat.so.63" Sha256="B515FA29C3A79B5532756E8222ED7D64BA3B9F9B079F02DFD3533ADFEAD08A9E" Origin="build" />
+    <TemnoFFmpegPin Include="lib/libavutil.so.61" Sha256="A1A921DFA38A86A331CFF17A3E3513FD7DAF19771AEA5D111D70659D79215259" Origin="build" />
+    <TemnoFFmpegPin Include="lib/libswresample.so.7" Sha256="40A214B7185E7991432096F2D58B568A3C11E5419E223C4AD039A42711FAB71D" Origin="build" />
+    <TemnoFFmpegPin Include="lib/libswscale.so.10" Sha256="366E3335E668AD6ADFF349790EBFCC5DF2ED921DB33763462F60B257EF697CED" Origin="build" />
+    <TemnoFFmpegPin Include="LICENSE" Sha256="8CEB4B9EE5ADEDDE47B31E975C1D90C73AD27B6B165A1DCD80C7C545EB65B903" Origin="build" />
+    <TemnoFFmpegPin Include="configure.txt" Sha256="DC90EF2CDCADCBAB2A09BDDC38F4AFDABEC570223986D15EB530AA14E3F50499" Origin="build" />
+    <TemnoFFmpegPin Include="source.txt" Sha256="972BFA5A813BC994EAA3A322D3B51EC5173E465DE62CD0213505EBE9673DE9BE" Origin="build" />
+  </ItemGroup>
+</Project>

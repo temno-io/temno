@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Temno.Media</RootNamespace>
+    <Description>Decode, preview, export, GPU effects. Heavy Windows verification.</Description>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- CA2007 is an error here (see .editorconfig): these libraries are called
+         synchronously from the WinUI dispatcher through the MCP tool surface, where a
+         context-capturing await deadlocks the whole app. -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisMode>None</AnalysisMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Temno.Core\Temno.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- WP-216 T2 P1: the post-connect failure classifier decides whether a fallback raises the
+         alarm, and the only honest way to test that decision is against real exit codes rather
+         than against whichever failure mode the installed ffmpeg happens to produce. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Temno.Core.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Vortice.D3DCompiler" Version="3.8.3" />
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageReference Include="Vortice.Direct2D1" Version="3.8.3" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
+    <PackageReference Include="Whisper.net" Version="1.8.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.8.1" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.14" />
+  </ItemGroup>
+</Project>

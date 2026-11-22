@@ -1,0 +1,29 @@
+## .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.DotSettings.user
+artifacts/
+TestResults/
+*.nupkg
+*.snupkg
+
+## IDE and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+## Downloaded payloads (scripts/ensure-*.ps1 and scripts/build-msix.ps1 fetch or copy these)
+tools/
+
+## Machine-local settings: deploy profiles and anything else under .local/
+.local/
+
+## Signing material never belongs in Git
+*.pfx
+*.p12

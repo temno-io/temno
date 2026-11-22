@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Temno.Core</RootNamespace>
+    <AssemblyName>Temno.Core</AssemblyName>
+    <Description>Domain models, project I/O, and timeline edit engines. Platform-agnostic.</Description>
+    <!-- CA2007 is an error here (see .editorconfig): these libraries are called
+         synchronously from the WinUI dispatcher through the MCP tool surface, where a
+         context-capturing await deadlocks the whole app. -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisMode>None</AnalysisMode>
+  </PropertyGroup>
+  <!-- WP-260: HostedEndpoints.BuildEnvironment reads this; only the exact name production makes a production build. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="TemnoEnvironment" Value="$(TemnoEnvironment)" />
+  </ItemGroup>
+  <!-- WP-402: BuildProvenance reads these. The stamp is a support label, not a security control. A build folder has no
+       package version, so a build from source compares the update feed with the version its source manifest names. -->
+  <PropertyGroup>
+    <TemnoAppManifest>$(MSBuildThisFileDirectory)..\Temno.App\Package.appxmanifest</TemnoAppManifest>
+    <TemnoAppVersion Condition="'$(TemnoAppVersion)' == '' And Exists('$(TemnoAppManifest)')">$([System.Text.RegularExpressions.Regex]::Replace($([System.IO.File]::ReadAllText('$(TemnoAppManifest)')), '(?s)^.*?&lt;Identity\b[^&gt;]*?\sVersion="([0-9.]+)".*$', '$1'))</TemnoAppVersion>
+    <TemnoAppVersion Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(TemnoAppVersion)', '^[0-9]+(\.[0-9]+){1,3}$'))"></TemnoAppVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="TemnoOfficialBuild" Value="$(TemnoOfficialBuild)" />
+    <AssemblyMetadata Include="TemnoAppVersion" Value="$(TemnoAppVersion)" />
+  </ItemGroup>
+  <!-- MSBuild's == is case-insensitive, so the names are compared with String.Equals (ordinal). -->
+  <Target Name="ValidateTemnoEnvironment" BeforeTargets="CoreCompile">
+    <Error
+      Condition="!$([System.String]::Equals('$(TemnoEnvironment)', 'development')) And !$([System.String]::Equals('$(TemnoEnvironment)', 'production'))"
+      Text="TemnoEnvironment must be exactly development or production (it is '$(TemnoEnvironment)')." />
+  </Target>
+</Project>

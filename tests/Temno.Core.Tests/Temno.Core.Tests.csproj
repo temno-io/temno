@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Temno.Core.Tests</RootNamespace>
+    <!-- WP-406: restore refuses a package whose bytes differ from packages.lock.json. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+  <!-- WP-406: the pinned FFmpeg, beside the test assemblies in ffmpeg\, where FFmpegResolver finds it. -->
+  <Import Project="..\..\scripts\ffmpeg\Temno.FFmpeg.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Temno.Core\Temno.Core.csproj" />
+    <ProjectReference Include="..\..\src\Temno.Generation\Temno.Generation.csproj" />
+    <ProjectReference Include="..\..\src\Temno.Media\Temno.Media.csproj" />
+    <ProjectReference Include="..\..\src\Temno.Mcp\Temno.Mcp.csproj" />
+  </ItemGroup>
+  <!-- Tests that read files the public repository does not carry, such as the Gateway's model profiles, live in
+       tests\Temno.Core.PrivateTests and compile into this assembly where that folder exists. The public repository
+       carries this project folder only, so there they are absent and nothing here changes. -->
+  <ItemGroup Condition="Exists('..\Temno.Core.PrivateTests')">
+    <Compile Include="..\Temno.Core.PrivateTests\**\*.cs" LinkBase="Private" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- WP-356: signed test packages, built by docs/verification/wp-356/make-fixtures.ps1. -->
+    <None Update="Fixtures\Updates\*.msix" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

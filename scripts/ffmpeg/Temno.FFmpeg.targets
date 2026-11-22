@@ -1,0 +1,97 @@
+<Project>
+  <!-- WP-406: Temno's FFmpeg (9.1-temno1 since WP-442) as a NuGet dependency, pinned file by file.
+
+       This file is the only home of the pins. Temno.App and the Core tests import it, which adds the package
+       reference; ensure-ffmpeg.ps1, build-ffmpeg.ps1, pack-ffmpeg-nuget.ps1 and build-msix.ps1 read the pins and
+       the source facts from it. The package's own build file places ffmpeg\ beside the app. The checks here live
+       in the repository, not in the package: the projects' NuGet lock files refuse a package whose bytes differ,
+       and TemnoVerifyFFmpegRuntime refuses an extracted package whose files differ from these pins. -->
+  <PropertyGroup>
+    <TemnoFFmpegPackageId>Temno.FFmpeg.Runtime.win-x64</TemnoFFmpegPackageId>
+    <!-- The build's version (ffmpeg -version, the pins), and the package's, in NuGet's normalized form (9.1 is
+         9.1.0). nuget.org never changes a published version, so new notices for the same files take a new temnoN. -->
+    <TemnoFFmpegVersion>9.1-temno1</TemnoFFmpegVersion>
+    <TemnoFFmpegPackageVersion>9.1.0-temno1</TemnoFFmpegPackageVersion>
+    <TemnoFFmpegSourceUrl>https://ffmpeg.org/releases/ffmpeg-9.1.tar.xz</TemnoFFmpegSourceUrl>
+    <TemnoFFmpegSourceSha256>1A4D394AE63D190A526CD052EB4415C156B5C5E2DF37EFAB41A7DE0B8FDE2433</TemnoFFmpegSourceSha256>
+    <TemnoFFmpegSourceCommit>74e4393595cf2b5857f0da925c4e0dd74ea306e5</TemnoFFmpegSourceCommit>
+    <TemnoFFmpegBuildImageDigest>sha256:82b19b2dda7139d96228fcd56bf33c050764bd9e4ca3ae29eb3c50a648bcb714</TemnoFFmpegBuildImageDigest>
+    <!-- BtbN's image, and the copy the owner keeps in case ghcr drops it. Both are pulled by the digest above. -->
+    <TemnoFFmpegBuildImage>ghcr.io/btbn/ffmpeg-builds/win64-gpl-shared</TemnoFFmpegBuildImage>
+    <TemnoFFmpegBuildImageArchive>ghcr.io/temno-io/btbn-ffmpeg-builds-win64-gpl-shared</TemnoFFmpegBuildImageArchive>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Origin="build": written by build-in-container.sh. Origin="ensure": written by ensure-ffmpeg.ps1 from the
+         binaries' configure line and the patch list. The package's ffmpeg\ folder holds these files and no other. -->
+    <TemnoFFmpegPin Include="ffmpeg.exe" Sha256="44C7ECE1A1DB14C0AD62BD5FB7AF5702329802526DB675DC76164ED311C2D7D8" Origin="build" />
+    <TemnoFFmpegPin Include="ffprobe.exe" Sha256="5F8B60EA6C1ED88D5D5DDA02E090A4CC736BEC4A3252BF0F01419146D28C50DE" Origin="build" />
+    <TemnoFFmpegPin Include="avcodec-63.dll" Sha256="8F11045DBCD4FE6459E5B69B9787F473AA14FC20E2A738BAF83ECAF322D0EC07" Origin="build" />
+    <TemnoFFmpegPin Include="avdevice-63.dll" Sha256="117A31AB8A42F68BDF81D02FF6C9C4539090D15EB6AF2255BDE128537FB21790" Origin="build" />
+    <TemnoFFmpegPin Include="avfilter-12.dll" Sha256="EC9E56C1A7BE6E0999F0AE140E87085F85611F14FE8435A96F678D79B7BC3738" Origin="build" />
+    <TemnoFFmpegPin Include="avformat-63.dll" Sha256="52FDF9B5611D458398E0E9AB46234F85685E2A5D9EC790D4F40B45499F391471" Origin="build" />
+    <TemnoFFmpegPin Include="avutil-61.dll" Sha256="B62E7F0ECA8254275E849273E573859F31766DF9971EC43545740487EC8E98C4" Origin="build" />
+    <TemnoFFmpegPin Include="swresample-7.dll" Sha256="2C15E53795914E443EA2E0BE4C3D57A4AF522CBB930F0F727FF5E2DB58FE6BA8" Origin="build" />
+    <TemnoFFmpegPin Include="swscale-10.dll" Sha256="23AA4A09173FBFF4878A42604180A653A105CA288FF3E766537C735729F1D3F2" Origin="build" />
+    <TemnoFFmpegPin Include="LICENSE" Sha256="8CEB4B9EE5ADEDDE47B31E975C1D90C73AD27B6B165A1DCD80C7C545EB65B903" Origin="build" />
+    <TemnoFFmpegPin Include="configure.txt" Sha256="7818CB876EFBCDFBC0D1166FA53A56DBD8028202216545C38DC60A339D7ACF58" Origin="ensure" />
+    <TemnoFFmpegPin Include="source.txt" Sha256="6B86819E32724123609A7A0158E16E937E2D4033502AA96162AAD0D4E2BA89F7" Origin="ensure" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="$(TemnoFFmpegPackageId)" Version="[$(TemnoFFmpegPackageVersion)]" GeneratePathProperty="true" PrivateAssets="all" />
+  </ItemGroup>
+
+  <Target Name="TemnoVerifyFFmpegRuntime" BeforeTargets="PrepareForBuild" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_TemnoFFmpegPackageRoot>$(PkgTemno_FFmpeg_Runtime_win-x64)</_TemnoFFmpegPackageRoot>
+      <_TemnoFFmpegDir Condition="'$(_TemnoFFmpegPackageRoot)' != ''">$([MSBuild]::NormalizeDirectory('$(_TemnoFFmpegPackageRoot)', 'ffmpeg'))</_TemnoFFmpegDir>
+    </PropertyGroup>
+    <Error Condition="'$(_TemnoFFmpegDir)' == '' Or !Exists('$(_TemnoFFmpegDir)')"
+           Text="$(TemnoFFmpegPackageId) $(TemnoFFmpegPackageVersion) is not restored. Run dotnet restore; it comes from nuget.org like any other package." />
+    <ItemGroup>
+      <_TemnoFFmpegExpected Include="@(TemnoFFmpegPin->'$(_TemnoFFmpegDir)%(Identity)')" />
+      <_TemnoFFmpegPresent Include="$(_TemnoFFmpegDir)*" />
+      <_TemnoFFmpegUnpinned Include="@(_TemnoFFmpegPresent)" Exclude="@(_TemnoFFmpegExpected)" />
+      <_TemnoFFmpegMissing Include="@(_TemnoFFmpegExpected)" Condition="!Exists('%(Identity)')" />
+    </ItemGroup>
+    <Error Condition="'@(_TemnoFFmpegUnpinned)' != ''"
+           Text="$(_TemnoFFmpegDir) holds files that are not pinned in scripts\ffmpeg\Temno.FFmpeg.targets: @(_TemnoFFmpegUnpinned->'%(Filename)%(Extension)', ', '). Delete the folder and restore again." />
+    <Error Condition="'@(_TemnoFFmpegMissing)' != ''"
+           Text="$(_TemnoFFmpegDir) is missing @(_TemnoFFmpegMissing->'%(Filename)%(Extension)', ', '). Delete the folder and restore again." />
+    <GetFileHash Files="@(_TemnoFFmpegExpected)" Algorithm="SHA256" HashEncoding="hex">
+      <Output TaskParameter="Items" ItemName="_TemnoFFmpegHashed" />
+    </GetFileHash>
+    <Error Condition="'%(_TemnoFFmpegHashed.FileHash)' != '%(_TemnoFFmpegHashed.Sha256)'"
+           Text="%(_TemnoFFmpegHashed.Identity) has SHA-256 %(_TemnoFFmpegHashed.FileHash), not the pinned %(_TemnoFFmpegHashed.Sha256). Delete $(_TemnoFFmpegPackageRoot) and restore again." />
+  </Target>
+
+  <!-- ffmpeg.exe loads most of its DLLs from its own folder first (WP-401), so the build output's ffmpeg\ holds the
+       pinned files and nothing else that can load: a stale or foreign copy is replaced, and an unpinned EXE or DLL
+       is deleted. -->
+  <Target Name="TemnoRefreshFFmpegOutput" AfterTargets="CopyFilesToOutputDirectory" DependsOnTargets="TemnoVerifyFFmpegRuntime"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_TemnoFFmpegOutDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(OutDir)', 'ffmpeg'))</_TemnoFFmpegOutDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_TemnoFFmpegOut Include="@(TemnoFFmpegPin->'$(_TemnoFFmpegOutDir)%(Identity)')" />
+      <_TemnoFFmpegOutPresent Include="@(_TemnoFFmpegOut)" Condition="Exists('%(Identity)')" />
+      <_TemnoFFmpegOutAbsent Include="@(_TemnoFFmpegOut)" Condition="!Exists('%(Identity)')" />
+      <_TemnoFFmpegOutLoadable Include="$(_TemnoFFmpegOutDir)*.exe;$(_TemnoFFmpegOutDir)*.dll" />
+      <_TemnoFFmpegOutForeign Include="@(_TemnoFFmpegOutLoadable)" Exclude="@(_TemnoFFmpegOut)" />
+    </ItemGroup>
+    <GetFileHash Files="@(_TemnoFFmpegOutPresent)" Algorithm="SHA256" HashEncoding="hex" Condition="'@(_TemnoFFmpegOutPresent)' != ''">
+      <Output TaskParameter="Items" ItemName="_TemnoFFmpegOutHashed" />
+    </GetFileHash>
+    <ItemGroup>
+      <_TemnoFFmpegOutStale Include="@(_TemnoFFmpegOutHashed)" Condition="'%(FileHash)' != '%(Sha256)'" />
+      <_TemnoFFmpegOutStale Include="@(_TemnoFFmpegOutAbsent)" />
+    </ItemGroup>
+    <Delete Files="@(_TemnoFFmpegOutForeign)" />
+    <Message Importance="high" Condition="'@(_TemnoFFmpegOutForeign)' != ''"
+             Text="Deleted unpinned files from $(_TemnoFFmpegOutDir): @(_TemnoFFmpegOutForeign->'%(Filename)%(Extension)', ', ')" />
+    <Copy SourceFiles="$(_TemnoFFmpegDir)%(_TemnoFFmpegOutStale.Filename)%(_TemnoFFmpegOutStale.Extension)"
+          DestinationFolder="$(_TemnoFFmpegOutDir)" SkipUnchangedFiles="false" Condition="'@(_TemnoFFmpegOutStale)' != ''" />
+  </Target>
+</Project>

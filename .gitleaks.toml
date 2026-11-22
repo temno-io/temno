@@ -1,0 +1,15 @@
+# gitleaks configuration for this repository: the default rules, plus the reviewed exceptions below.
+# CI runs gitleaks 8.30.1 over the whole history with this file. An exception names one file and one
+# value, and says why it is not a secret.
+
+title = "Temno"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Production's Supabase publishable key. It is public by design: Supabase publishable keys ship in clients, and the app compiles this one in (EnvironmentIdentity.Production)."
+condition = "AND"
+paths = ['''(?:^|[\\/])src[\\/]Temno\.Core[\\/]Environments[\\/]EnvironmentIdentity\.cs$''']
+regexTarget = "match"
+regexes = ['''sb_publishable_3TxCcK_WV0me7c27He4N5w_7tE33Oom''']

@@ -1,0 +1,756 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Temno.App.Controls.SettingsControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Temno.App.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <!--
+            The Default model menu's rows. The stock menu row is its line of text plus 9 px of its own template with 4 px more
+            between rows, whatever its Padding says, which made this 17-row list long. These templates set a row from its
+            type: 13 px text on a 22 px row (about 1.7 times the type) for a model, 11 px text on a 22 px row with 4 px above
+            it and none below for a provider's name, so a heading sits against its models and apart from the group before.
+        -->
+        <Style x:Key="DefaultModelMenuItemStyle" TargetType="MenuFlyoutItem">
+            <Setter Property="FontSize" Value="{StaticResource AppTheme.FontSize.Md}" />
+            <Setter Property="Padding" Value="{StaticResource AppTheme.Padding.MdXxs}" />
+            <Setter Property="MinHeight" Value="{StaticResource AppTheme.ComponentSize.CompactMenuItemHeight}" />
+            <Setter Property="Foreground" Value="{ThemeResource MenuFlyoutItemForeground}" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="UseSystemFocusVisuals" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuFlyoutItem">
+                        <Grid
+                            x:Name="LayoutRoot"
+                            Margin="{StaticResource AppTheme.Padding.HXs}"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{StaticResource AppTheme.CornerRadius.Sm}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPointerOver}" />
+                                            <Setter Target="ItemText.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPointerOver}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPressed}" />
+                                            <Setter Target="ItemText.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPressed}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="ItemText.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundDisabled}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <TextBlock
+                                x:Name="ItemText"
+                                VerticalAlignment="Center"
+                                Foreground="{TemplateBinding Foreground}"
+                                Text="{TemplateBinding Text}"
+                                TextTrimming="Clip" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DefaultModelMenuHeadingStyle" TargetType="MenuFlyoutItem">
+            <Setter Property="FontSize" Value="{StaticResource AppTheme.FontSize.Sm}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Padding" Value="{StaticResource AppTheme.Padding.MenuHeading}" />
+            <Setter Property="MinHeight" Value="{StaticResource AppTheme.ComponentSize.MenuHeadingHeight}" />
+            <Setter Property="Foreground" Value="{StaticResource AppTheme.Text.Tertiary}" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuFlyoutItem">
+                        <Grid x:Name="LayoutRoot" Margin="{StaticResource AppTheme.Padding.HXs}" Padding="{TemplateBinding Padding}">
+                            <TextBlock
+                                VerticalAlignment="Top"
+                                Foreground="{TemplateBinding Foreground}"
+                                Text="{TemplateBinding Text}"
+                                TextTrimming="Clip" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DefaultModelMenuSubItemStyle" TargetType="MenuFlyoutSubItem">
+            <Setter Property="FontSize" Value="{StaticResource AppTheme.FontSize.Md}" />
+            <Setter Property="Padding" Value="{StaticResource AppTheme.Padding.MdXxs}" />
+            <Setter Property="MinHeight" Value="{StaticResource AppTheme.ComponentSize.CompactMenuItemHeight}" />
+            <Setter Property="Foreground" Value="{ThemeResource MenuFlyoutItemForeground}" />
+            <Setter Property="UseSystemFocusVisuals" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuFlyoutSubItem">
+                        <Grid
+                            x:Name="LayoutRoot"
+                            Margin="{StaticResource AppTheme.Padding.HXs}"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{StaticResource AppTheme.CornerRadius.Sm}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPointerOver}" />
+                                            <Setter Target="ItemText.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPointerOver}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPressed}" />
+                                            <Setter Target="ItemText.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPressed}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="SubMenuOpened">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPointerOver}" />
+                                            <Setter Target="ItemText.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPointerOver}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="ItemText.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundDisabled}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <TextBlock
+                                x:Name="ItemText"
+                                VerticalAlignment="Center"
+                                Foreground="{TemplateBinding Foreground}"
+                                Text="{TemplateBinding Text}"
+                                TextTrimming="Clip" />
+                            <FontIcon
+                                x:Name="SubItemChevron"
+                                Grid.Column="1"
+                                Margin="{StaticResource AppTheme.Padding.LeftSmMd}"
+                                VerticalAlignment="Center"
+                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                Foreground="{Binding Foreground, ElementName=ItemText}"
+                                Glyph="&#xE974;" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DefaultModelMenuLevelStyle" TargetType="RadioMenuFlyoutItem">
+            <Setter Property="FontSize" Value="{StaticResource AppTheme.FontSize.Md}" />
+            <Setter Property="Padding" Value="{StaticResource AppTheme.Padding.MdXxs}" />
+            <Setter Property="MinHeight" Value="{StaticResource AppTheme.ComponentSize.CompactMenuItemHeight}" />
+            <Setter Property="Foreground" Value="{ThemeResource MenuFlyoutItemForeground}" />
+            <Setter Property="UseSystemFocusVisuals" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioMenuFlyoutItem">
+                        <Grid
+                            x:Name="LayoutRoot"
+                            Margin="{StaticResource AppTheme.Padding.HXs}"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{StaticResource AppTheme.CornerRadius.Sm}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="{StaticResource AppTheme.Grid.MenuGlyphColumn}" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPointerOver}" />
+                                            <Setter Target="ItemText.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPointerOver}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPressed}" />
+                                            <Setter Target="ItemText.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPressed}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="ItemText.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundDisabled}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                                <VisualStateGroup x:Name="CheckStates">
+                                    <VisualState x:Name="Unchecked" />
+                                    <VisualState x:Name="Checked">
+                                        <VisualState.Setters>
+                                            <Setter Target="CheckedBullet.Visibility" Value="Visible" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Ellipse
+                                x:Name="CheckedBullet"
+                                Width="{StaticResource AppTheme.ComponentSize.MenuBulletSize}"
+                                Height="{StaticResource AppTheme.ComponentSize.MenuBulletSize}"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Fill="{Binding Foreground, ElementName=ItemText}"
+                                Visibility="Collapsed" />
+                            <TextBlock
+                                x:Name="ItemText"
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Foreground="{TemplateBinding Foreground}"
+                                Text="{TemplateBinding Text}"
+                                TextTrimming="Clip" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid ColumnSpacing="{StaticResource AppTheme.Spacing.LgXl}">
+        <Grid.RowDefinitions><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="{StaticResource AppTheme.Grid.SettingsNavigationWidth}" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+        <Border BorderBrush="{StaticResource AppTheme.Border.Primary}" BorderThickness="0,0,1,0" Padding="{StaticResource AppTheme.Padding.RightXs}">
+        <StackPanel Orientation="Vertical" Spacing="{StaticResource AppTheme.Spacing.Xs}">
+            <Button
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" BorderThickness="0"
+                x:Name="TabAccount"
+                Padding="{StaticResource AppTheme.Padding.Control}"
+                Click="Tab_Click"
+                Content="Account"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Tag="account"
+                AutomationProperties.Name="Account settings"
+                ToolTipService.ToolTip="Google sign-in, credit balance, and hosted endpoints" />
+            <Button
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" BorderThickness="0"
+                x:Name="TabMcp"
+                Padding="{StaticResource AppTheme.Padding.Control}"
+                Click="Tab_Click"
+                Content="MCP"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Tag="mcp"
+                AutomationProperties.Name="MCP settings"
+                ToolTipService.ToolTip="MCP server — loopback tools for editor agents" />
+            <Button
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" BorderThickness="0"
+                x:Name="TabAgent"
+                Padding="{StaticResource AppTheme.Padding.Control}"
+                Click="Tab_Click"
+                Content="AI Chat"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Tag="agent"
+                AutomationProperties.Name="AI Chat settings"
+                ToolTipService.ToolTip="Anthropic-compatible chat endpoint" />
+            <Button
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" BorderThickness="0"
+                x:Name="TabSkills"
+                Padding="{StaticResource AppTheme.Padding.Control}"
+                Click="Tab_Click"
+                Content="Skills"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Tag="skills"
+                AutomationProperties.Name="Skills settings"
+                ToolTipService.ToolTip="Playbooks the assistant follows" />
+            <Button
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" BorderThickness="0"
+                x:Name="TabGeneration"
+                Padding="{StaticResource AppTheme.Padding.Control}"
+                Click="Tab_Click"
+                Content="Generation"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Tag="generation"
+                AutomationProperties.Name="Generation settings"
+                ToolTipService.ToolTip="Leave URL and key empty if generation is unused" />
+            <Button
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" BorderThickness="0"
+                x:Name="TabSearch"
+                Padding="{StaticResource AppTheme.Padding.Control}"
+                Click="Tab_Click"
+                Content="Search"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Tag="search"
+                AutomationProperties.Name="Search settings"
+                ToolTipService.ToolTip="What search finds, and its index on this PC" />
+            <Button
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" BorderThickness="0"
+                x:Name="TabExport"
+                Padding="{StaticResource AppTheme.Padding.Control}"
+                Click="Tab_Click"
+                Content="Export"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Tag="export"
+                AutomationProperties.Name="Export settings"
+                ToolTipService.ToolTip="Prefer GPU encoders when FFmpeg exposes them" />
+            <Button
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" BorderThickness="0"
+                x:Name="TabPrivacy"
+                Padding="{StaticResource AppTheme.Padding.Control}"
+                Click="Tab_Click"
+                Content="Privacy"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Tag="privacy"
+                AutomationProperties.Name="Privacy settings"
+                ToolTipService.ToolTip="Telemetry is not wired. Google account lives on the Account tab." />
+            <Button
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" BorderThickness="0"
+                x:Name="TabUpdates"
+                Padding="{StaticResource AppTheme.Padding.Control}"
+                Click="Tab_Click"
+                Content="Updates"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Tag="updates"
+                AutomationProperties.Name="Updates settings"
+                ToolTipService.ToolTip="Installed version and update checks" />
+        </StackPanel>
+        </Border>
+        <ScrollViewer
+            Grid.Column="1"
+            HorizontalScrollMode="Disabled"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollMode="Enabled"
+            VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="{StaticResource AppTheme.Padding.RightLgXl}" Spacing="{StaticResource AppTheme.Spacing.LgXl}">
+
+            <StackPanel x:Name="PaneAccount" Spacing="{StaticResource AppTheme.Spacing.Md}">
+            <controls:AccountControl />
+        </StackPanel>
+
+        <StackPanel x:Name="PaneMcp" Spacing="{StaticResource AppTheme.Spacing.Md}">
+            <controls:McpSetupControl />
+        </StackPanel>
+
+        <StackPanel
+            x:Name="PaneAgent"
+            Spacing="{StaticResource AppTheme.Spacing.Md}"
+            Visibility="Collapsed">
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.Xl}"
+                FontWeight="SemiBold"
+                Foreground="{StaticResource AppTheme.Text.Primary}"
+                Text="In-app chat" />
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                Text="Configure BYOK Anthropic chat. Signed-in hosted chat is the default when a gateway URL is set."
+                TextWrapping="WrapWholeWords" />
+            <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xs}">
+                <TextBlock
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="Default model" />
+                <DropDownButton
+                    x:Name="AgentDefaultModelButton"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Left"
+                    AutomationProperties.Name="AI Chat default model"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    ToolTipService.ToolTip="The model and reasoning level new projects start on. Hover a model to choose its level." />
+                <TextBlock
+                    x:Name="AgentHostedModelNote"
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    TextWrapping="WrapWholeWords" />
+            </StackPanel>
+            <Grid ColumnSpacing="{StaticResource AppTheme.Spacing.Md}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                    Text="Prefer my Anthropic key"
+                    TextWrapping="WrapWholeWords" />
+                <ToggleSwitch
+                    x:Name="PreferByokSwitch"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    AutomationProperties.Name="Prefer Anthropic BYOK over hosted chat"
+                    OffContent="Off"
+                    OnContent="On"
+                    ToolTipService.ToolTip="When off, signed-in hosted chat is used if a gateway URL is set" />
+            </Grid>
+            <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xs}">
+                <TextBlock
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="Endpoint" />
+                <TextBox
+                    x:Name="AgentBaseUrlBox"
+                    AutomationProperties.Name="AI Chat endpoint"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    PlaceholderText="https://api.anthropic.com"
+                    ToolTipService.ToolTip="Anthropic-compatible base URL. TEMNO_ANTHROPIC_BASE_URL overlays this when set." />
+            </StackPanel>
+            <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xs}">
+                <TextBlock
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="Model (your Anthropic key)" />
+                <TextBox
+                    x:Name="AgentModelBox"
+                    AutomationProperties.Name="AI Chat model"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    PlaceholderText="Enter model ID"
+                    ToolTipService.ToolTip="TEMNO_ANTHROPIC_MODEL overlays this when set." />
+            </StackPanel>
+            <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xs}">
+                <TextBlock
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="API key" />
+                <PasswordBox
+                    x:Name="AgentApiKeyBox"
+                    AutomationProperties.Name="AI Chat API key"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    PlaceholderText="Paste API key"
+                    ToolTipService.ToolTip="ANTHROPIC_API_KEY and TEMNO_ANTHROPIC_API_KEY overlay this when set." />
+            </StackPanel>
+            <TextBlock
+                x:Name="AgentStatusText"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                TextWrapping="WrapWholeWords" />
+        </StackPanel>
+
+        <StackPanel
+            x:Name="PaneSkills"
+            Spacing="{StaticResource AppTheme.Spacing.Md}"
+            Visibility="Collapsed">
+            <controls:SkillsControl x:Name="SkillsPane" />
+        </StackPanel>
+
+        <StackPanel
+            x:Name="PaneGeneration"
+            Spacing="{StaticResource AppTheme.Spacing.Md}"
+            Visibility="Collapsed">
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.Xl}"
+                FontWeight="SemiBold"
+                Foreground="{StaticResource AppTheme.Text.Primary}"
+                Text="Generation" />
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                Text="Configure the endpoint used to generate media."
+                TextWrapping="WrapWholeWords" />
+            <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xs}">
+                <TextBlock
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="Endpoint" />
+                <TextBox
+                    x:Name="GenerationBaseUrlBox"
+                    AutomationProperties.Name="Generation endpoint"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    PlaceholderText="Generation endpoint URL"
+                    ToolTipService.ToolTip="TEMNO_API_BASE_URL overlays this when set. Empty means unconfigured." />
+            </StackPanel>
+            <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xs}">
+                <TextBlock
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="API key" />
+                <PasswordBox
+                    x:Name="GenerationApiKeyBox"
+                    AutomationProperties.Name="Generation API key"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    PlaceholderText="Paste API key"
+                    ToolTipService.ToolTip="TEMNO_API_KEY overlays this when set. Empty means unconfigured." />
+            </StackPanel>
+            <TextBlock
+                x:Name="GenerationStatusText"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                TextWrapping="WrapWholeWords" />
+        </StackPanel>
+
+        <StackPanel
+            x:Name="PaneSearch"
+            Spacing="{StaticResource AppTheme.Spacing.Md}"
+            Visibility="Collapsed">
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.Xl}"
+                FontWeight="SemiBold"
+                Foreground="{StaticResource AppTheme.Text.Primary}"
+                Text="Search" />
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                Text="Find clips by what&#x2019;s said in them and by color and light, such as &#x201C;sunset&#x201D;, &#x201C;snow&#x201D; or &#x201C;night&#x201D;. Speech is searchable once a clip has a transcript. Search runs on this PC."
+                TextWrapping="WrapWholeWords" />
+            <Grid ColumnSpacing="{StaticResource AppTheme.Spacing.Md}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                    <TextBlock
+                        FontSize="{StaticResource AppTheme.FontSize.Md}"
+                        Foreground="{StaticResource AppTheme.Text.Secondary}"
+                        Text="Search index" />
+                    <TextBlock
+                        x:Name="SearchIndexSizeText"
+                        FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                        TextWrapping="WrapWholeWords"
+                        AutomationProperties.AutomationId="SearchIndexSize" />
+                </StackPanel>
+                <Button
+                    x:Name="ClearSearchIndexButton"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Click="ClearSearchIndex_Click"
+                    Content="Clear index"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    AutomationProperties.Name="Clear search index"
+                    ToolTipService.ToolTip="Deletes what search has learned about your media. Your media and projects are not touched, and the index rebuilds the next time you search." />
+            </Grid>
+            <TextBlock
+                x:Name="SearchIndexStatusText"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Secondary}"
+                TextWrapping="WrapWholeWords"
+                Visibility="Collapsed"
+                AutomationProperties.AutomationId="SearchIndexStatus" />
+        </StackPanel>
+
+        <StackPanel
+            x:Name="PaneExport"
+            Spacing="{StaticResource AppTheme.Spacing.Md}"
+            Visibility="Collapsed">
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.Xl}"
+                FontWeight="SemiBold"
+                Foreground="{StaticResource AppTheme.Text.Primary}"
+                Text="Export preferences" />
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                Text="Choose the default encoding preference for new exports."
+                TextWrapping="WrapWholeWords" />
+            <Grid ColumnSpacing="{StaticResource AppTheme.Spacing.Md}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                    Text="Prefer hardware encoding"
+                    TextWrapping="WrapWholeWords" />
+                <ToggleSwitch
+                    x:Name="PreferHardwareEncodeSwitch"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    AutomationProperties.Name="Prefer hardware encode"
+                    OffContent="Off"
+                    OnContent="On"
+                    ToolTipService.ToolTip="NVENC / QSV / AMF when FFmpeg exposes them; otherwise software" />
+            </Grid>
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                Text="Uses a supported hardware encoder when available."
+                TextWrapping="WrapWholeWords" />
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.Lg}"
+                FontWeight="SemiBold"
+                Foreground="{StaticResource AppTheme.Text.Primary}"
+                Text="Compositing" />
+            <TextBlock
+                x:Name="CompositorStatusText"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Secondary}"
+                TextWrapping="WrapWholeWords" />
+            <TextBlock
+                x:Name="CompositorActivityText"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                TextWrapping="WrapWholeWords" />
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.Lg}"
+                FontWeight="SemiBold"
+                Foreground="{StaticResource AppTheme.Text.Primary}"
+                Text="Frame transport" />
+            <TextBlock
+                x:Name="TransportStatusText"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Secondary}"
+                TextWrapping="WrapWholeWords" />
+            <TextBlock
+                x:Name="TransportActivityText"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                TextWrapping="WrapWholeWords" />
+        </StackPanel>
+
+        <StackPanel
+            x:Name="PanePrivacy"
+            Spacing="{StaticResource AppTheme.Spacing.Md}"
+            Visibility="Collapsed">
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.Xl}"
+                FontWeight="SemiBold"
+                Foreground="{StaticResource AppTheme.Text.Primary}"
+                Text="Privacy and cache" />
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                Text="Diagnostics are not collected by this build."
+                TextWrapping="WrapWholeWords" />
+            <Button
+                HorizontalAlignment="Left"
+                Click="ClearCache_Click"
+                Content="Clear cache"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                AutomationProperties.Name="Clear local cache"
+                ToolTipService.ToolTip="Clears thumbnails, proxies, and visual-search indexes. Does not delete projects, API keys, or the Whisper model." />
+            <TextBlock
+                x:Name="CacheStatusText"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Secondary}"
+                TextWrapping="WrapWholeWords"
+                AutomationProperties.AutomationId="CacheClearStatus" />
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                Text="Cached previews and search data can be rebuilt."
+                TextWrapping="WrapWholeWords" />
+        </StackPanel>
+
+        <StackPanel
+            x:Name="PaneUpdates"
+            Spacing="{StaticResource AppTheme.Spacing.Md}"
+            Visibility="Collapsed">
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.Xl}"
+                FontWeight="SemiBold"
+                Foreground="{StaticResource AppTheme.Text.Primary}"
+                Text="Updates" />
+            <TextBlock
+                x:Name="CurrentVersionText"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Secondary}"
+                TextTrimming="CharacterEllipsis"
+                ToolTipService.ToolTip="{Binding Text, ElementName=CurrentVersionText}" />
+            <StackPanel x:Name="UpdateFeedPanel" Spacing="{StaticResource AppTheme.Spacing.Xs}">
+                <TextBlock
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="Update feed" />
+                <TextBox
+                    x:Name="UpdateFeedUrlBox"
+                    AutomationProperties.Name="Update feed URL"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    PlaceholderText="Optional HTTPS URL or local JSON file"
+                    ToolTipService.ToolTip="Empty uses this build's own feed, if it has one. TEMNO_UPDATE_FEED_URL overlays this when set." />
+            </StackPanel>
+            <TextBlock
+                x:Name="UpdateHonestyText"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                TextWrapping="WrapWholeWords" />
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                <Button
+                    x:Name="CheckNowButton"
+                    Click="CheckNow_Click"
+                    Content="Check now"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    AutomationProperties.Name="Check for updates"
+                    ToolTipService.ToolTip="Saves dialog changes, then checks the feed" />
+                <Button
+                    x:Name="InstallUpdateButton"
+                    Visibility="Collapsed"
+                    Click="InstallUpdate_Click"
+                    Content="Install update"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    AutomationProperties.Name="Install update"
+                    ToolTipService.ToolTip="Downloads a remote package, or installs a local one, then asks Windows to install it. Unsigned packages are refused." />
+            </StackPanel>
+            <ProgressRing
+                x:Name="UpdateProgress"
+                HorizontalAlignment="Left"
+                Width="{StaticResource AppTheme.IconSize.Sm}"
+                Height="{StaticResource AppTheme.IconSize.Sm}"
+                IsActive="False"
+                Visibility="Collapsed" />
+            <TextBlock
+                x:Name="UpdateStatusText"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Secondary}"
+                TextWrapping="WrapWholeWords" />
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                Text="Check now saves any changes in this dialog."
+                TextWrapping="WrapWholeWords" />
+            <Expander
+                x:Name="DeveloperToolsExpander"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Left"
+                AutomationProperties.Name="Developer tools"
+                Header="Developer tools">
+                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Md}">
+                    <TextBlock
+                        FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                        Text="Optional JSON feed: { &quot;version&quot;: &quot;0.1.0&quot;, &quot;appInstallerUrl&quot;: &quot;https://...&quot; }. Use an https URL or a local .json path. Left empty, Temno reads this build's own feed, updateFeedUrl in the developer file, and contacts no network without one. TEMNO_UPDATE_FEED_URL overlays the saved URL when set."
+                        TextWrapping="WrapWholeWords" />
+                    <TextBlock
+                        FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                        Text="Code signing is optional. This repo does not ship a purchased certificate. See docs/MSIX_RELEASE.md. Copy the local-dev commands:"
+                        TextWrapping="WrapWholeWords" />
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                        <Button
+                            Click="CopyDevCert_Click"
+                            Content="Copy new-dev-cert.ps1"
+                            FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                            AutomationProperties.Name="Copy new-dev-cert.ps1"
+                            ToolTipService.ToolTip="This repo does not ship a purchased certificate" />
+                        <Button
+                            Click="CopyBuildMsix_Click"
+                            Content="Copy build-msix.ps1"
+                            FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                            AutomationProperties.Name="Copy build-msix.ps1"
+                            ToolTipService.ToolTip="See docs/MSIX_RELEASE.md" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Name="CopyStatus"
+                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                        Foreground="{StaticResource AppTheme.Status.Success}"
+                        Visibility="Collapsed" />
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Margin="{StaticResource AppTheme.Padding.TopXs}"
+                   FontSize="{StaticResource AppTheme.FontSize.SmMd}" Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                   Text="Other changes are saved when you press Save." />
+    </Grid>
+</UserControl>

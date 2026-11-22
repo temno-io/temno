@@ -1,0 +1,20 @@
+<Project>
+  <!-- WP-402: the public repository adds Temno.Public.props, which makes its builds production by default. This
+       repository has no such file, so its builds stay development. -->
+  <Import Project="$(MSBuildThisFileDirectory)Temno.Public.props" Condition="Exists('$(MSBuildThisFileDirectory)Temno.Public.props')" />
+  <PropertyGroup>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <!-- WP-264: release PDBs and exception stacks use /_/… instead of this machine's paths. -->
+    <ContinuousIntegrationBuild Condition="'$(Configuration)' == 'Release'">true</ContinuousIntegrationBuild>
+    <!-- WP-260: the backend this build belongs to (docs/contracts/environments.md). -->
+    <TemnoEnvironment Condition="'$(TemnoEnvironment)' == ''">development</TemnoEnvironment>
+    <!-- WP-402: Temno's own builds, made from this repository, are official. The public repository's
+         Temno.Public.props sets false, so a clone's builds say they were built from source. A label for support, not a security
+         control: anyone building the source can set it. -->
+    <TemnoOfficialBuild Condition="'$(TemnoOfficialBuild)' == ''">true</TemnoOfficialBuild>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,904 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Temno.App.Controls.InspectorControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Temno.App.Controls"
+    xmlns:shared="using:Temno.App.Controls.Shared"
+    IsTabStop="True" AutomationProperties.Name="Inspector">
+
+    <Grid Background="{StaticResource AppTheme.Background.Surface}">
+        <ScrollViewer Padding="{StaticResource AppTheme.Padding.R3Panel}" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="RootPanel" Spacing="{StaticResource AppTheme.Spacing.Md}">
+                <TextBlock
+                    x:Name="EmptyLabel"
+                    FontSize="{StaticResource AppTheme.FontSize.Md}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text=""
+                    TextWrapping="WrapWholeWords"
+                    Visibility="Collapsed" />
+
+                <StackPanel x:Name="ProjectPanel" Spacing="{StaticResource AppTheme.Spacing.Md}">
+                    <shared:SectionHeader Title="Project" SectionId="inspector.project">
+                        <shared:SectionHeader.SectionContent>
+                            <Grid ColumnSpacing="{StaticResource AppTheme.Spacing.Md}" RowSpacing="{StaticResource AppTheme.Spacing.Sm}">
+                                <Grid.ColumnDefinitions>
+                                    <!-- DESIGN.md §1 (WP-197): one 96 px label column for Inspector, Captions and Project rows. -->
+                                    <ColumnDefinition Width="96" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Name" />
+                                <TextBlock x:Name="ProjectNameText" Grid.Column="1" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Secondary}" TextTrimming="CharacterEllipsis" Text="—" />
+                                <TextBlock Grid.Row="1" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Path" />
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <Border x:Name="ProjectPathTooltipHost" Background="Transparent">
+                                        <TextBlock
+                                            x:Name="ProjectPathText"
+                                            FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                            Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                            IsTextSelectionEnabled="True"
+                                            TextWrapping="Wrap"
+                                            Text="—" />
+                                    </Border>
+                                    <StackPanel x:Name="ProjectPathActions" Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xs}" Visibility="Collapsed">
+                                        <Button
+                                            x:Name="CopyProjectPathBtn"
+                                            MinWidth="0"
+                                            MinHeight="0"
+                                            Padding="{StaticResource AppTheme.Padding.XsXxs}"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            CornerRadius="{StaticResource AppTheme.CornerRadius.XsSm}"
+                                            Foreground="{StaticResource AppTheme.Text.Secondary}"
+                                            Click="CopyProjectPath_Click"
+                                            AutomationProperties.Name="Copy project path"
+                                            ToolTipService.ToolTip="Copy full path">
+                                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                                <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="{StaticResource AppTheme.FontSize.Xs}" Glyph="&#xE8C8;" />
+                                                <TextBlock x:Name="CopyProjectPathLabel" FontSize="{StaticResource AppTheme.FontSize.Xs}" Text="Copy" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button
+                                            x:Name="RevealProjectPathBtn"
+                                            MinWidth="0"
+                                            MinHeight="0"
+                                            Padding="{StaticResource AppTheme.Padding.XsXxs}"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            CornerRadius="{StaticResource AppTheme.CornerRadius.XsSm}"
+                                            Foreground="{StaticResource AppTheme.Text.Secondary}"
+                                            Click="RevealProjectPath_Click"
+                                            AutomationProperties.Name="Reveal project in Explorer"
+                                            ToolTipService.ToolTip="Reveal in Explorer">
+                                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                                <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xxs}" Height="{StaticResource AppTheme.IconSize.Xxs}" Fill="{x:Bind RevealProjectPathBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.Folder}" />
+                                                <TextBlock FontSize="{StaticResource AppTheme.FontSize.Xs}" Text="Reveal" />
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+                                <TextBlock Grid.Row="2" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Duration" />
+                                <TextBlock x:Name="ProjectDurationText" Grid.Row="2" Grid.Column="1" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Secondary}" Text="0:00" />
+                                <TextBlock Grid.Row="3" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Timeline" />
+                                <TextBlock x:Name="ProjectTimelineCountText" AutomationProperties.AutomationId="InspectorProjectTimelineCount" Grid.Row="3" Grid.Column="1" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Secondary}" Text="Empty" />
+                            </Grid>
+                        </shared:SectionHeader.SectionContent>
+                    </shared:SectionHeader>
+                    <shared:SectionHeader Title="Settings" SectionId="inspector.settings">
+                        <shared:SectionHeader.SectionContent>
+                            <Grid ColumnSpacing="{StaticResource AppTheme.Spacing.Md}" RowSpacing="{StaticResource AppTheme.Spacing.Sm}">
+                                <Grid.ColumnDefinitions>
+                                    <!-- DESIGN.md §1 (WP-197): one 96 px label column (was 88). -->
+                                    <ColumnDefinition Width="96" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Quality" VerticalAlignment="Center" />
+                                <ComboBox x:Name="SettingsQualityBox" Grid.Column="1" HorizontalAlignment="Stretch" SelectionChanged="ProjectSettings_Changed">
+                                    <ComboBoxItem Content="720p" Tag="720p" />
+                                    <ComboBoxItem Content="1080p" Tag="1080p" IsSelected="True" />
+                                    <ComboBoxItem Content="2K" Tag="2K" />
+                                    <ComboBoxItem Content="4K" Tag="4K" />
+                                    <ComboBoxItem x:Name="SettingsQualityCustomItem" Content="Custom" Tag="custom" Visibility="Collapsed" />
+                                </ComboBox>
+                                <TextBlock Grid.Row="1" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Frame Rate" VerticalAlignment="Center" />
+                                <ComboBox x:Name="SettingsFpsBox" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" SelectionChanged="ProjectSettings_Changed">
+                                    <ComboBoxItem Content="24 fps" Tag="24" />
+                                    <ComboBoxItem Content="25 fps" Tag="25" />
+                                    <ComboBoxItem Content="30 fps" Tag="30" IsSelected="True" />
+                                    <ComboBoxItem Content="50 fps" Tag="50" />
+                                    <ComboBoxItem Content="60 fps" Tag="60" />
+                                    <ComboBoxItem Content="Custom" Tag="custom" />
+                                </ComboBox>
+                                <TextBlock x:Name="SettingsCustomFpsLabel" Grid.Row="2" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Custom FPS" VerticalAlignment="Center" Visibility="Collapsed" />
+                                <shared:UnitNumberField
+                                    x:Name="SettingsCustomFpsBox"
+                                    Grid.Row="2"
+                                    Grid.Column="1"
+                                    Visibility="Collapsed"
+                                    AutomationProperties.AutomationId="Inspector.CustomFps"
+                                    AutomationProperties.Name="Custom project frame rate"
+                                    ToolTipService.ToolTip="Custom timeline frame rate (1–120 fps)" />
+                                <TextBlock Grid.Row="3" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Aspect" VerticalAlignment="Center" />
+                                <ComboBox x:Name="SettingsAspectBox" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Stretch" SelectionChanged="ProjectSettings_Changed">
+                                    <ComboBoxItem Content="16:9" Tag="16:9" IsSelected="True" />
+                                    <ComboBoxItem Content="9:16" Tag="9:16" />
+                                    <ComboBoxItem Content="1:1" Tag="1:1" />
+                                    <ComboBoxItem Content="4:3" Tag="4:3" />
+                                    <ComboBoxItem Content="2.4:1" Tag="2.4:1" />
+                                    <ComboBoxItem x:Name="SettingsAspectCustomItem" Content="Custom" Tag="custom" Visibility="Collapsed" />
+                                </ComboBox>
+                            </Grid>
+                        </shared:SectionHeader.SectionContent>
+                    </shared:SectionHeader>
+                    <TextBlock x:Name="SettingsResolutionText" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="1920 × 1080 · 30 fps" />
+
+                    <Border
+                        x:Name="ProjectAttentionCard"
+                        Padding="{StaticResource AppTheme.Padding.Sm}"
+                        BorderBrush="{StaticResource AppTheme.Status.Warning}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource AppTheme.CornerRadius.XsSm}"
+                        Visibility="Collapsed">
+                        <TextBlock
+                            x:Name="ProjectAttentionText"
+                            AutomationProperties.AutomationId="InspectorProjectAttention"
+                            FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                            Foreground="{StaticResource AppTheme.Status.Warning}"
+                            TextWrapping="WrapWholeWords" />
+                    </Border>
+                </StackPanel>
+
+                <StackPanel x:Name="MediaAssetPanel" Spacing="{StaticResource AppTheme.Spacing.Sm}" Visibility="Collapsed">
+                    <TextBlock FontWeight="SemiBold" Foreground="{StaticResource AppTheme.Text.Primary}" Text="Media" />
+                    <TextBlock x:Name="MediaAssetName" FontSize="{StaticResource AppTheme.FontSize.Md}" Foreground="{StaticResource AppTheme.Text.Primary}" TextTrimming="CharacterEllipsis" />
+                    <Grid ColumnSpacing="{StaticResource AppTheme.Spacing.Md}" RowSpacing="{StaticResource AppTheme.Spacing.Sm}">
+                        <Grid.ColumnDefinitions>
+                            <!-- DESIGN.md §1 (WP-197): one 96 px label column (was 72). -->
+                            <ColumnDefinition Width="96" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Kind" />
+                        <TextBlock x:Name="MediaAssetKind" Grid.Column="1" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Secondary}" />
+                        <TextBlock Grid.Row="1" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Duration" />
+                        <TextBlock x:Name="MediaAssetDuration" Grid.Row="1" Grid.Column="1" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Secondary}" />
+                        <TextBlock Grid.Row="2" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Path" />
+                        <StackPanel Grid.Row="2" Grid.Column="1" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                            <Border x:Name="MediaAssetPathTooltipHost" Background="Transparent">
+                                <TextBlock
+                                    x:Name="MediaAssetPath"
+                                    IsTextSelectionEnabled="True"
+                                    FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                    TextWrapping="Wrap" />
+                            </Border>
+                            <StackPanel x:Name="MediaAssetPathActions" Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xs}" Visibility="Collapsed">
+                                <Button
+                                    x:Name="CopyMediaPathBtn"
+                                    MinWidth="0"
+                                    MinHeight="0"
+                                    Padding="{StaticResource AppTheme.Padding.XsXxs}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    CornerRadius="{StaticResource AppTheme.CornerRadius.XsSm}"
+                                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                                    Click="CopyMediaPath_Click"
+                                    AutomationProperties.Name="Copy media path"
+                                    ToolTipService.ToolTip="Copy full path">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="{StaticResource AppTheme.FontSize.Xs}" Glyph="&#xE8C8;" />
+                                        <TextBlock x:Name="CopyMediaPathLabel" FontSize="{StaticResource AppTheme.FontSize.Xs}" Text="Copy" />
+                                    </StackPanel>
+                                </Button>
+                                <Button
+                                    x:Name="RevealMediaPathBtn"
+                                    MinWidth="0"
+                                    MinHeight="0"
+                                    Padding="{StaticResource AppTheme.Padding.XsXxs}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    CornerRadius="{StaticResource AppTheme.CornerRadius.XsSm}"
+                                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                                    Click="RevealMediaPath_Click"
+                                    AutomationProperties.Name="Reveal media in Explorer"
+                                    ToolTipService.ToolTip="Reveal in Explorer">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xxs}" Height="{StaticResource AppTheme.IconSize.Xxs}" Fill="{x:Bind RevealMediaPathBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.Folder}" />
+                                        <TextBlock FontSize="{StaticResource AppTheme.FontSize.Xs}" Text="Reveal" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                        <TextBlock Grid.Row="3" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Id" Visibility="Collapsed" />
+                        <TextBlock x:Name="MediaAssetId" Visibility="Collapsed" Grid.Row="3" Grid.Column="1" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                </StackPanel>
+
+                <!-- WP-252: a transition block selected on the timeline. -->
+                <StackPanel x:Name="TransitionPanel" Spacing="{StaticResource AppTheme.Spacing.Xxs}" Visibility="Collapsed">
+                    <TextBlock
+                        x:Name="TransitionTitle"
+                        AutomationProperties.AutomationId="InspectorTransitionTitle"
+                        FontSize="{StaticResource AppTheme.FontSize.Md}"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource AppTheme.Text.Primary}"
+                        TextTrimming="CharacterEllipsis" />
+                    <TextBlock
+                        x:Name="TransitionPlace"
+                        AutomationProperties.AutomationId="InspectorTransitionPlace"
+                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                        TextWrapping="WrapWholeWords" />
+                    <shared:EditorRow x:Name="TransitionTypeRow" Label="Type">
+                        <shared:EditorRow.RowContent>
+                            <ComboBox x:Name="TransitionTypeBox" HorizontalAlignment="Stretch" SelectionChanged="TransitionType_SelectionChanged" AutomationProperties.AutomationId="Inspector.TransitionType" AutomationProperties.Name="Transition type" ToolTipService.ToolTip="How the outgoing shot hands over to the incoming one" />
+                        </shared:EditorRow.RowContent>
+                    </shared:EditorRow>
+                    <shared:EditorRow x:Name="TransitionCurveRow" Label="Curve">
+                        <shared:EditorRow.RowContent>
+                            <ComboBox x:Name="TransitionCurveBox" HorizontalAlignment="Stretch" SelectionChanged="TransitionCurve_SelectionChanged" AutomationProperties.AutomationId="Inspector.TransitionCurve" AutomationProperties.Name="Fade curve" ToolTipService.ToolTip="Linear changes at a steady rate; Smooth eases in and out">
+                                <ComboBoxItem Content="Linear" Tag="linear" />
+                                <ComboBoxItem Content="Smooth" Tag="smooth" />
+                            </ComboBox>
+                        </shared:EditorRow.RowContent>
+                    </shared:EditorRow>
+                    <shared:EditorRow x:Name="TransitionDurationRow" Label="Duration">
+                        <shared:EditorRow.RowContent>
+                            <shared:UnitNumberField x:Name="TransitionDurationBox" AutomationProperties.AutomationId="Inspector.TransitionDuration" AutomationProperties.Name="Transition duration" ToolTipService.ToolTip="Length in seconds. Drag sideways to scrub, or drag the block's edge on the timeline." />
+                        </shared:EditorRow.RowContent>
+                    </shared:EditorRow>
+                    <TextBlock
+                        x:Name="TransitionRoomText"
+                        AutomationProperties.AutomationId="InspectorTransitionRoom"
+                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                        TextWrapping="WrapWholeWords" />
+                    <Button
+                        x:Name="TransitionRemoveButton"
+                        Margin="{StaticResource AppTheme.Padding.TopXs}"
+                        Click="TransitionRemove_Click"
+                        AutomationProperties.AutomationId="Inspector.TransitionRemove"
+                        ToolTipService.ToolTip="Remove it from the timeline (Delete)">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xs}">
+                            <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind TransitionRemoveButton.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.Delete}" />
+                            <TextBlock x:Name="TransitionRemoveText" FontSize="{StaticResource AppTheme.FontSize.Sm}" Text="Remove transition" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel x:Name="FieldsPanel" Spacing="{StaticResource AppTheme.Spacing.Xxs}" Visibility="Collapsed"
+                            XYFocusKeyboardNavigation="Disabled">
+                    <TextBlock
+                        x:Name="ClipTitle"
+                        AutomationProperties.AutomationId="InspectorClipTitle"
+                        FontSize="{StaticResource AppTheme.FontSize.Md}"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource AppTheme.Text.Primary}"
+                        TextTrimming="CharacterEllipsis" />
+                    <TextBlock
+                        x:Name="ClipTypeLabel"
+                        AutomationProperties.AutomationId="InspectorClipType"
+                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                        Foreground="{StaticResource AppTheme.Text.Tertiary}" />
+                    <TextBlock
+                        x:Name="MultiSelectBanner"
+                        AutomationProperties.AutomationId="InspectorMultiSelectBanner"
+                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                        Foreground="{StaticResource AppTheme.Status.Warning}"
+                        Text=""
+                        TextWrapping="WrapWholeWords"
+                        Visibility="Collapsed" />
+
+                    <Border
+                        x:Name="TabBarHost"
+                        AutomationProperties.AutomationId="InspectorTabBar"
+                        Background="{StaticResource AppTheme.Background.Surface}"
+                        BorderBrush="{StaticResource AppTheme.Border.Primary}"
+                        BorderThickness="0,0,0,1"
+                        CornerRadius="{StaticResource AppTheme.CornerRadius.Hairline}"
+                        Padding="{StaticResource AppTheme.Padding.Xxs}"
+                        Visibility="Collapsed">
+                        <StackPanel x:Name="TabBar" Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xxs}" />
+                    </Border>
+
+                    <!-- VIDEO tab -->
+                    <StackPanel x:Name="VideoTabPane" Spacing="{StaticResource AppTheme.Spacing.Sm}" Visibility="Collapsed">
+                        <shared:SectionHeader Title="Timing" SectionId="inspector.video.timing">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <shared:EditorRow x:Name="StartRow" Label="Start">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="StartBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="DurationRow" Label="Duration">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="DurationBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <TextBlock
+                                        x:Name="TimingTimecodeText"
+                                        FontFamily="{StaticResource AppTheme.FontFamily.Mono}"
+                                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                        Text="" />
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+
+                        <shared:SectionHeader Title="Transform" SectionId="inspector.video.transform">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+
+                                    <!-- WP-196: one compact line: three small step buttons + inline status. -->
+
+                                    <shared:EditorRow x:Name="ScaleRow" Label="Scale">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="ScaleBox" AutomationProperties.AutomationId="Inspector.Scale" />
+                                        </shared:EditorRow.RowContent>
+                                    <shared:EditorRow.RowAccessory><Button x:Name="ScaleKfStampBtn" AllowFocusOnInteraction="False" Width="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" MinWidth="0" Height="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" MinHeight="0" Background="Transparent" BorderThickness="0" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="ScaleKfStamp_Click" AutomationProperties.Name="Stamp scale keyframe at playhead" ToolTipService.ToolTip="Stamp / remove scale keyframe at playhead" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind ScaleKfStampBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.Diamond}" /></Button></shared:EditorRow.RowAccessory>
+                                    </shared:EditorRow>
+
+                                    <shared:EditorRow x:Name="PosXRow" Label="Center X">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="PosXBox" />
+                                        </shared:EditorRow.RowContent>
+                                    <shared:EditorRow.RowAccessory><Button x:Name="PositionKfStampBtn" AllowFocusOnInteraction="False" Width="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" MinWidth="0" Height="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" MinHeight="0" Background="Transparent" BorderThickness="0" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="PositionKfStamp_Click" AutomationProperties.Name="Stamp position keyframe at playhead" ToolTipService.ToolTip="Stamp / remove position keyframe at playhead" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind PositionKfStampBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.Diamond}" /></Button></shared:EditorRow.RowAccessory>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="PosYRow" Label="Center Y">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="PosYBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+
+                                    <shared:EditorRow x:Name="RotationRow" Label="Rotation">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="RotBox" />
+                                        </shared:EditorRow.RowContent>
+                                    <shared:EditorRow.RowAccessory><Button x:Name="RotationKfStampBtn" AllowFocusOnInteraction="False" Width="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" MinWidth="0" Height="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" MinHeight="0" Background="Transparent" BorderThickness="0" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="RotationKfStamp_Click" AutomationProperties.Name="Stamp rotation keyframe at playhead" ToolTipService.ToolTip="Stamp / remove rotation keyframe at playhead" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind RotationKfStampBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.Diamond}" /></Button></shared:EditorRow.RowAccessory>
+                                    </shared:EditorRow>
+<shared:EditorRow x:Name="OpacityRow" Label="Opacity">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="OpacityBox" AutomationProperties.AutomationId="Inspector.Opacity" />
+                                        </shared:EditorRow.RowContent>
+                                    <shared:EditorRow.RowAccessory><Button x:Name="OpacityKfStampBtn" AllowFocusOnInteraction="False" Width="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" MinWidth="0" Height="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" MinHeight="0" Background="Transparent" BorderThickness="0" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="OpacityKfStamp_Click" AutomationProperties.Name="Stamp opacity keyframe at playhead" ToolTipService.ToolTip="Stamp / remove opacity keyframe at playhead" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind OpacityKfStampBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.Diamond}" /></Button></shared:EditorRow.RowAccessory>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="VideoFadeInRow" Label="Fade in">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="VideoFadeInBox" AutomationProperties.AutomationId="Inspector.VideoFadeIn" AutomationProperties.Name="Fade in" ToolTipService.ToolTip="Picture fade in, in seconds. Edits this clip, not its linked audio." />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="VideoFadeOutRow" Label="Fade out">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="VideoFadeOutBox" AutomationProperties.AutomationId="Inspector.VideoFadeOut" AutomationProperties.Name="Fade out" ToolTipService.ToolTip="Picture fade out, in seconds. Edits this clip, not its linked audio." />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+
+
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                                        <ToggleButton x:Name="FlipHBtn" Content="Flip H" Click="Flip_Click" />
+                                        <ToggleButton x:Name="FlipVBtn" Content="Flip V" Click="Flip_Click" />
+                                    </StackPanel>
+                                    <shared:EditorRow x:Name="BlendModeRow" Label="Blend mode">
+                                        <shared:EditorRow.RowContent>
+                                            <ComboBox x:Name="BlendModeBox" HorizontalAlignment="Stretch" PlaceholderText="—" SelectionChanged="BlendMode_SelectionChanged" AutomationProperties.AutomationId="Inspector.BlendMode" AutomationProperties.Name="Blend mode">
+                                                <ComboBoxItem Content="Normal" Tag="normal" />
+                                                <ComboBoxItem Content="Multiply" Tag="multiply" />
+                                                <ComboBoxItem Content="Screen" Tag="screen" />
+                                                <ComboBoxItem Content="Overlay" Tag="overlay" />
+                                                <ComboBoxItem Content="Darken" Tag="darken" />
+                                                <ComboBoxItem Content="Lighten" Tag="lighten" />
+                                                <ComboBoxItem Content="Add" Tag="add" />
+                                            </ComboBox>
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+
+                        <shared:SectionHeader Title="Playback" SectionId="inspector.video.playback" IsExpanded="False">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <shared:EditorRow x:Name="SpeedRow" Label="Speed">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="SpeedBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+
+                        <shared:SectionHeader Title="Crop" SectionId="inspector.video.crop" IsExpanded="False">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <shared:EditorRow x:Name="CropLRow" Label="Left">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="CropLBox" />
+                                        </shared:EditorRow.RowContent>
+                                    <shared:EditorRow.RowAccessory><Button x:Name="CropKfStampBtn" AllowFocusOnInteraction="False" Width="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" MinWidth="0" Height="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" MinHeight="0" Background="Transparent" BorderThickness="0" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="CropKfStamp_Click" AutomationProperties.Name="Stamp crop keyframe at playhead" ToolTipService.ToolTip="Stamp / remove crop keyframe at playhead" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind CropKfStampBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.Diamond}" /></Button></shared:EditorRow.RowAccessory>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="CropTRow" Label="Top">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="CropTBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="CropRRow" Label="Right">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="CropRBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="CropBRow" Label="Bottom">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="CropBBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+
+                                    <TextBlock
+                                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                        Text="Values commit live (one undo per edit gesture). Drag to scrub; Shift for fine. ◆ stamps a keyframe at the playhead."
+                                        TextWrapping="WrapWholeWords" />
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+                        <shared:SectionHeader x:Name="KeyframesSection" Title="Keyframes" SectionId="inspector.video.keyframes" IsExpanded="False">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Sm}">
+<StackPanel x:Name="OpacityKfRow" Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                        <Button x:Name="OpacityKfPrevBtn" MinWidth="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="OpacityKfPrev_Click" AutomationProperties.Name="Previous opacity keyframe" ToolTipService.ToolTip="Previous opacity keyframe" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind OpacityKfPrevBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.ArrowPrevious}" /></Button>
+
+                                        <Button x:Name="OpacityKfNextBtn" MinWidth="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="OpacityKfNext_Click" AutomationProperties.Name="Next opacity keyframe" ToolTipService.ToolTip="Next opacity keyframe" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind OpacityKfNextBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.ArrowNext}" /></Button>
+                                        <TextBlock x:Name="OpacityKfStatus" VerticalAlignment="Center" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel><StackPanel x:Name="ScaleKfRow" Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                        <Button x:Name="ScaleKfPrevBtn" MinWidth="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="ScaleKfPrev_Click" AutomationProperties.Name="Previous scale keyframe" ToolTipService.ToolTip="Previous scale keyframe" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind ScaleKfPrevBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.ArrowPrevious}" /></Button>
+
+                                        <Button x:Name="ScaleKfNextBtn" MinWidth="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="ScaleKfNext_Click" AutomationProperties.Name="Next scale keyframe" ToolTipService.ToolTip="Next scale keyframe" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind ScaleKfNextBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.ArrowNext}" /></Button>
+                                        <TextBlock x:Name="ScaleKfStatus" VerticalAlignment="Center" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel><StackPanel x:Name="PositionKfRow" Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                        <Button x:Name="PositionKfPrevBtn" MinWidth="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="PositionKfPrev_Click" AutomationProperties.Name="Previous position keyframe" ToolTipService.ToolTip="Previous position keyframe" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind PositionKfPrevBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.ArrowPrevious}" /></Button>
+
+                                        <Button x:Name="PositionKfNextBtn" MinWidth="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="PositionKfNext_Click" AutomationProperties.Name="Next position keyframe" ToolTipService.ToolTip="Next position keyframe" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind PositionKfNextBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.ArrowNext}" /></Button>
+                                        <TextBlock x:Name="PositionKfStatus" VerticalAlignment="Center" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel><StackPanel x:Name="RotationKfRow" Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                        <Button x:Name="RotationKfPrevBtn" MinWidth="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="RotationKfPrev_Click" AutomationProperties.Name="Previous rotation keyframe" ToolTipService.ToolTip="Previous rotation keyframe" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind RotationKfPrevBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.ArrowPrevious}" /></Button>
+
+                                        <Button x:Name="RotationKfNextBtn" MinWidth="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="RotationKfNext_Click" AutomationProperties.Name="Next rotation keyframe" ToolTipService.ToolTip="Next rotation keyframe" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind RotationKfNextBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.ArrowNext}" /></Button>
+                                        <TextBlock x:Name="RotationKfStatus" VerticalAlignment="Center" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel><StackPanel x:Name="CropKfRow" Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                        <Button x:Name="CropKfPrevBtn" MinWidth="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="CropKfPrev_Click" AutomationProperties.Name="Previous crop keyframe" ToolTipService.ToolTip="Previous crop keyframe" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind CropKfPrevBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.ArrowPrevious}" /></Button>
+
+                                        <Button x:Name="CropKfNextBtn" MinWidth="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="CropKfNext_Click" AutomationProperties.Name="Next crop keyframe" ToolTipService.ToolTip="Next crop keyframe" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind CropKfNextBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.ArrowNext}" /></Button>
+                                        <TextBlock x:Name="CropKfStatus" VerticalAlignment="Center" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>                                    <TextBlock FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Keyframe lanes" />
+                                    <Border
+                                        x:Name="KeyframeLaneHost"
+                                        Height="72"
+                                        Background="{StaticResource AppTheme.Background.Surface}"
+                                        BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+                                        BorderThickness="1"
+                                        CornerRadius="{StaticResource AppTheme.CornerRadius.Sm}"
+                                        Padding="{StaticResource AppTheme.Padding.XsXxs}">
+                                        <Canvas
+                                            x:Name="KeyframeLaneCanvas"
+                                            HorizontalAlignment="Stretch"
+                                            VerticalAlignment="Stretch"
+                                            SizeChanged="KeyframeLaneCanvas_SizeChanged"
+                                            PointerPressed="KeyframeLane_PointerPressed"
+                                            PointerMoved="KeyframeLane_PointerMoved"
+                                            PointerReleased="KeyframeLane_PointerReleased"
+                                            PointerCaptureLost="KeyframeLane_PointerCaptureLost" />
+                                    </Border>
+                                    <TextBlock
+                                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                        Text="Drag ◆ diamonds to retime keyframes (one undo on release)."
+                                        TextWrapping="WrapWholeWords" />
+                                    <local:KeyframeGraphPanel x:Name="KeyframeGraph" Edited="KeyframeGraph_Edited" SeekPlayheadRequested="KeyframeGraph_Seek" />
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+
+                    </StackPanel>
+
+                    <!-- ADJUST tab -->
+                    <StackPanel x:Name="AdjustTabPane" Spacing="{StaticResource AppTheme.Spacing.Sm}" Visibility="Collapsed">
+                        <shared:SectionHeader Title="Basic correction" SectionId="inspector.adjust.basic">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <shared:EditorRow x:Name="GradeExposureRow" Label="Exposure">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="GradeExposureBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="GradeContrastRow" Label="Contrast">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="GradeContrastBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="GradeSaturationRow" Label="Saturation">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="GradeSaturationBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+
+                        <shared:SectionHeader Title="White balance" SectionId="inspector.adjust.wb">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <shared:EditorRow x:Name="GradeTemperatureRow" Label="Temperature">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="GradeTemperatureBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="GradeTintRow" Label="Tint">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="GradeTintBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+
+                        <shared:SectionHeader Title="Tone" SectionId="inspector.adjust.tone">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <shared:EditorRow x:Name="GradeHighlightsRow" Label="Highlights">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="GradeHighlightsBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="GradeShadowsRow" Label="Shadows">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="GradeShadowsBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="GradeBlacksRow" Label="Blacks">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="GradeBlacksBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="GradeWhitesRow" Label="Whites">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="GradeWhitesBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+
+                        <shared:SectionHeader Title="Presence" SectionId="inspector.adjust.presence">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <shared:EditorRow x:Name="GradeVibranceRow" Label="Vibrance">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="GradeVibranceBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+
+                        <shared:SectionHeader Title="Color wheels" SectionId="inspector.adjust.wheels">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <TextBlock FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" TextWrapping="WrapWholeWords"
+                                   Text="Drag pads for chroma (X/Y). Master sliders for lift/gamma/gain luma. Renders on CPU." />
+                                    <VariableSizedWrapGrid x:Name="WheelsGrid" Orientation="Horizontal" MaximumRowsOrColumns="3" ItemWidth="96" HorizontalAlignment="Stretch">
+                                        <StackPanel x:Name="LiftWheel" Spacing="{StaticResource AppTheme.Spacing.Xs}" HorizontalAlignment="Left" MaxWidth="96">
+                                            <TextBlock Text="Lift" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Secondary}" HorizontalAlignment="Center" />
+                                            <Border x:Name="LiftWheelBorder" Width="88" Height="88" Background="{StaticResource AppTheme.Background.Surface}" BorderBrush="{StaticResource AppTheme.Border.Subtle}" BorderThickness="1" CornerRadius="44" HorizontalAlignment="Center" SizeChanged="WheelBorder_SizeChanged">
+                                                <Canvas x:Name="LiftWheelPad" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                        PointerPressed="WheelPad_PointerPressed" PointerMoved="WheelPad_PointerMoved"
+                                                        PointerReleased="WheelPad_PointerReleased" PointerCaptureLost="WheelPad_PointerCaptureLost" />
+                                            </Border>
+                                            <shared:EditorRow x:Name="GradeLiftMRow" Label="M" ShowLabel="False" HorizontalAlignment="Center">
+                                                <shared:EditorRow.RowContent>
+                                                    <shared:UnitNumberField x:Name="GradeLiftMBox" />
+                                                </shared:EditorRow.RowContent>
+                                            </shared:EditorRow>
+                                        </StackPanel>
+                                        <StackPanel x:Name="GammaWheel" Spacing="{StaticResource AppTheme.Spacing.Xs}" HorizontalAlignment="Left" MaxWidth="96">
+                                            <TextBlock Text="Gamma" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Secondary}" HorizontalAlignment="Center" />
+                                            <Border x:Name="GammaWheelBorder" Width="88" Height="88" Background="{StaticResource AppTheme.Background.Surface}" BorderBrush="{StaticResource AppTheme.Border.Subtle}" BorderThickness="1" CornerRadius="44" HorizontalAlignment="Center" SizeChanged="WheelBorder_SizeChanged">
+                                                <Canvas x:Name="GammaWheelPad" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                        PointerPressed="WheelPad_PointerPressed" PointerMoved="WheelPad_PointerMoved"
+                                                        PointerReleased="WheelPad_PointerReleased" PointerCaptureLost="WheelPad_PointerCaptureLost" />
+                                            </Border>
+                                            <shared:EditorRow x:Name="GradeGammaMRow" Label="M" ShowLabel="False" HorizontalAlignment="Center">
+                                                <shared:EditorRow.RowContent>
+                                                    <shared:UnitNumberField x:Name="GradeGammaMBox" />
+                                                </shared:EditorRow.RowContent>
+                                            </shared:EditorRow>
+                                        </StackPanel>
+                                        <StackPanel x:Name="GainWheel" Spacing="{StaticResource AppTheme.Spacing.Xs}" HorizontalAlignment="Left" MaxWidth="96">
+                                            <TextBlock Text="Gain" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Secondary}" HorizontalAlignment="Center" />
+                                            <Border x:Name="GainWheelBorder" Width="88" Height="88" Background="{StaticResource AppTheme.Background.Surface}" BorderBrush="{StaticResource AppTheme.Border.Subtle}" BorderThickness="1" CornerRadius="44" HorizontalAlignment="Center" SizeChanged="WheelBorder_SizeChanged">
+                                                <Canvas x:Name="GainWheelPad" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                        PointerPressed="WheelPad_PointerPressed" PointerMoved="WheelPad_PointerMoved"
+                                                        PointerReleased="WheelPad_PointerReleased" PointerCaptureLost="WheelPad_PointerCaptureLost" />
+                                            </Border>
+                                            <shared:EditorRow x:Name="GradeGainMRow" Label="M" ShowLabel="False" HorizontalAlignment="Center">
+                                                <shared:EditorRow.RowContent>
+                                                    <shared:UnitNumberField x:Name="GradeGainMBox" />
+                                                </shared:EditorRow.RowContent>
+                                            </shared:EditorRow>
+                                        </StackPanel>
+                                    </VariableSizedWrapGrid>
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+
+                        <shared:SectionHeader Title="Curves (RGB)" SectionId="inspector.adjust.curves">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <TextBlock FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" TextWrapping="WrapWholeWords"
+                                   Text="Multi-point curves. Channel: Master / R / G / B. Drag points; double-tap empty to add; Alt+click to remove." />
+                                    <shared:EditorRow x:Name="RgbCurveChannelRow" Label="Channel">
+                                        <shared:EditorRow.RowContent>
+                                            <ComboBox x:Name="RgbCurveChannelBox" HorizontalAlignment="Stretch" SelectionChanged="RgbCurveChannel_SelectionChanged">
+                                                <ComboBoxItem Content="Master" Tag="master" IsSelected="True" />
+                                                <ComboBoxItem Content="Red" Tag="red" />
+                                                <ComboBoxItem Content="Green" Tag="green" />
+                                                <ComboBoxItem Content="Blue" Tag="blue" />
+                                            </ComboBox>
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <Border Height="140" Background="{StaticResource AppTheme.Background.Surface}" BorderBrush="{StaticResource AppTheme.Border.Subtle}" BorderThickness="1" CornerRadius="{StaticResource AppTheme.CornerRadius.Sm}">
+                                        <Canvas x:Name="MasterCurveCanvas" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                SizeChanged="MasterCurveCanvas_SizeChanged"
+                                                PointerPressed="MasterCurve_PointerPressed"
+                                                PointerMoved="MasterCurve_PointerMoved"
+                                                PointerReleased="MasterCurve_PointerReleased"
+                                                PointerCaptureLost="MasterCurve_PointerCaptureLost"
+                                                DoubleTapped="RgbCurve_DoubleTapped" />
+                                    </Border>
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+
+                        <shared:SectionHeader Title="Hue curves" SectionId="inspector.adjust.hue">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <TextBlock FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" TextWrapping="WrapWholeWords"
+                                   Text="Multi-point hue-vs-hue / sat / lum. Neutral Y=0.5. Drag · double-tap add · Alt+click remove." />
+                                    <shared:EditorRow x:Name="HueCurveChannelRow" Label="Hue curve">
+                                        <shared:EditorRow.RowContent>
+                                            <ComboBox x:Name="HueCurveChannelBox" HorizontalAlignment="Stretch" SelectionChanged="HueCurveChannel_SelectionChanged">
+                                                <ComboBoxItem Content="Hue vs Hue" Tag="hue" IsSelected="True" />
+                                                <ComboBoxItem Content="Hue vs Sat" Tag="sat" />
+                                                <ComboBoxItem Content="Hue vs Lum" Tag="lum" />
+                                            </ComboBox>
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <Border Height="140" Background="{StaticResource AppTheme.Background.Surface}" BorderBrush="{StaticResource AppTheme.Border.Subtle}" BorderThickness="1" CornerRadius="{StaticResource AppTheme.CornerRadius.Sm}">
+                                        <Canvas x:Name="HueCurveCanvas" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                SizeChanged="HueCurveCanvas_SizeChanged"
+                                                PointerPressed="HueCurve_PointerPressed"
+                                                PointerMoved="HueCurve_PointerMoved"
+                                                PointerReleased="HueCurve_PointerReleased"
+                                                PointerCaptureLost="HueCurve_PointerCaptureLost"
+                                                DoubleTapped="HueCurve_DoubleTapped" />
+                                    </Border>
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+
+                        <shared:SectionHeader Title="LUT" SectionId="inspector.adjust.lut">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <shared:EditorRow x:Name="GradeLutPathRow" Label="Path">
+                                        <shared:EditorRow.RowContent>
+                                            <TextBox x:Name="GradeLutPathBox" PlaceholderText="No LUT" LostFocus="GradeLutPath_LostFocus" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                                        <Button Content="Browse…" Click="GradeLutBrowse_Click" />
+                                        <Button Content="Clear" Click="GradeLutClear_Click" />
+                                    </StackPanel>
+                                    <shared:EditorRow x:Name="GradeLutIntensityRow" Label="Intensity">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="GradeLutIntensityBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <TextBlock FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" TextWrapping="WrapWholeWords"
+                                   Text="Grade stack (basic, WB, tone, vibrance, wheels, curves, hue curves, .cube LUT) renders on CPU in preview/export when applicable." />
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+
+                        <shared:SectionHeader Title="Effects stack" SectionId="inspector.adjust.effects">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <Grid ColumnSpacing="{StaticResource AppTheme.Spacing.Sm}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <shared:EditorRow x:Name="EffectCatalogRow" Label="Add effect">
+                                            <shared:EditorRow.RowContent>
+                                                <ComboBox x:Name="EffectCatalog" Grid.Column="0" DisplayMemberPath="Label"
+                                                          PlaceholderText="Effect" HorizontalAlignment="Stretch" />
+                                            </shared:EditorRow.RowContent>
+                                        </shared:EditorRow>
+                                        <Button x:Name="AddEffectButton" Grid.Column="1" Margin="{StaticResource AppTheme.Padding.Sm}" VerticalAlignment="Bottom" Click="AddEffect_Click" Content="Add" />
+                                    </Grid>
+                                    <TextBlock x:Name="EffectsStatusLabel" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" TextWrapping="WrapWholeWords" />
+                                    <TextBlock x:Name="EffectsEmptyLabel" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="No effects applied" />
+                                    <StackPanel x:Name="EffectsPanel" Spacing="{StaticResource AppTheme.Spacing.Sm}" />
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+                    </StackPanel>
+
+                    <!-- AUDIO tab -->
+                    <StackPanel x:Name="AudioTabPane" Spacing="{StaticResource AppTheme.Spacing.Sm}" Visibility="Collapsed">
+                        <shared:SectionHeader Title="Levels" SectionId="inspector.audio.levels">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <shared:EditorRow x:Name="VolumeDbRow" Label="Volume">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="VolumeDbBox" AutomationProperties.AutomationId="Inspector.Volume" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                        <Button x:Name="VolumeKfPrevBtn" MinWidth="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="VolumeKfPrev_Click" AutomationProperties.Name="Previous volume keyframe" ToolTipService.ToolTip="Previous volume keyframe" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind VolumeKfPrevBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.ArrowPrevious}" /></Button>
+                                        <Button x:Name="VolumeKfStampBtn" AllowFocusOnInteraction="False" MinWidth="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="VolumeKfStamp_Click" AutomationProperties.Name="Stamp volume keyframe at playhead" ToolTipService.ToolTip="Stamp / remove volume keyframe at playhead" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind VolumeKfStampBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.Diamond}" /></Button>
+                                        <Button x:Name="VolumeKfNextBtn" MinWidth="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" Padding="{StaticResource AppTheme.Padding.Xxs}" Click="VolumeKfNext_Click" AutomationProperties.Name="Next volume keyframe" ToolTipService.ToolTip="Next volume keyframe" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind VolumeKfNextBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.ArrowNext}" /></Button>
+                                        <TextBlock x:Name="VolumeKfStatus" VerticalAlignment="Center" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <TextBlock x:Name="VolumeLinearLabel" FontSize="{StaticResource AppTheme.FontSize.Xs}" Foreground="{StaticResource AppTheme.Text.Tertiary}" Text="Linear: 1.00" />
+                                    <shared:EditorRow x:Name="FadeInRow" Label="Fade in">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="FadeInBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="FadeOutRow" Label="Fade out">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="FadeOutBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="DenoiseRow" Label="Denoise">
+                                        <shared:EditorRow.RowContent>
+                                            <ToggleSwitch x:Name="DenoiseSwitch" OffContent="Off" OnContent="On" Toggled="Denoise_Toggled" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <TextBlock
+                                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                        Text="Reduces noise in playback and export."
+                                        TextWrapping="WrapWholeWords" />
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+                    </StackPanel>
+
+                    <!-- CONTENT tab (text) -->
+                    <StackPanel x:Name="TextTabPane" Spacing="{StaticResource AppTheme.Spacing.Sm}" Visibility="Collapsed">
+                        <shared:SectionHeader Title="Text" SectionId="inspector.content.text">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <shared:EditorRow x:Name="TextContentRow" Label="Content">
+                                        <shared:EditorRow.RowContent>
+                                            <TextBox
+                                                x:Name="TextContentBox"
+                                                AcceptsReturn="True"
+                                                MinHeight="72"
+                                                TextWrapping="Wrap"
+                                                LostFocus="TextFields_LostFocus" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <!-- WP-201: the TextStyle rows live in Shared/TextStyleRows.cs,
+                                         used here and in the Captions Style section. -->
+                                    <shared:TextStyleRows x:Name="TextStyleRows" />
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+
+                    </StackPanel>
+                    <StackPanel x:Name="TextAnimationTabPane" Spacing="{StaticResource AppTheme.Spacing.Sm}" Visibility="Collapsed">
+                        <shared:SectionHeader Title="Animate" SectionId="inspector.content.animate">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <shared:EditorRow x:Name="TextAnimationRow" Label="Preset">
+                                        <shared:EditorRow.RowContent>
+                                            <ComboBox x:Name="TextAnimationBox" HorizontalAlignment="Stretch" PlaceholderText="—" SelectionChanged="TextAnimation_SelectionChanged" AutomationProperties.Name="Text animation">
+                                                <ComboBoxItem Content="None" Tag="off" IsSelected="True" />
+                                                <ComboBoxItem Content="Fade In" Tag="fadeIn" />
+                                                <ComboBoxItem Content="Pop In" Tag="popIn" />
+                                                <ComboBoxItem Content="Slide Up" Tag="slideUp" />
+                                                <ComboBoxItem Content="Typewriter" Tag="typewriter" />
+                                                <ComboBoxItem Content="Word Reveal" Tag="wordReveal" />
+                                                <ComboBoxItem Content="Word Slide" Tag="wordSlide" />
+                                                <ComboBoxItem Content="Word Pop" Tag="wordPop" />
+                                                <ComboBoxItem Content="Word Cycle" Tag="wordCycle" />
+                                                <ComboBoxItem Content="Highlight Pop" Tag="highlightPop" />
+                                                <ComboBoxItem Content="Highlight Block" Tag="highlightBlock" />
+                                            </ComboBox>
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <shared:EditorRow x:Name="TextAnimPerWordRow" Label="Per-word">
+                                        <shared:EditorRow.RowContent>
+                                            <shared:UnitNumberField x:Name="TextAnimPerWordBox" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <TextBlock
+                                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                        Text="Animation applies in preview and export. Windows uses DirectWrite with installed system fonts (Helvetica/SF names map to Segoe UI)."
+                                        TextWrapping="WrapWholeWords" />
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+                    </StackPanel>
+
+                    <!-- MULTICAM tab -->
+                    <StackPanel x:Name="MulticamTabPane" Spacing="{StaticResource AppTheme.Spacing.Sm}" Visibility="Collapsed">
+                        <shared:SectionHeader Title="Multicam group" SectionId="inspector.multicam.group">
+                            <shared:SectionHeader.SectionContent>
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <TextBlock
+                                        x:Name="MulticamGroupNameLabel"
+                                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                        Foreground="{StaticResource AppTheme.Text.Primary}"
+                                        Text=""
+                                        TextWrapping="WrapWholeWords" />
+                                    <TextBlock
+                                        x:Name="MulticamCurrentAngleLabel"
+                                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                        Foreground="{StaticResource AppTheme.Text.Secondary}"
+                                        Text=""
+                                        TextWrapping="WrapWholeWords" />
+                                    <TextBlock
+                                        x:Name="MulticamMembersLabel"
+                                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                        Text=""
+                                        TextWrapping="WrapWholeWords" />
+                                    <shared:EditorRow x:Name="MulticamAngleRow" Label="Switch to">
+                                        <shared:EditorRow.RowContent>
+                                            <ComboBox
+                                                x:Name="MulticamAngleBox"
+                                                HorizontalAlignment="Stretch"
+                                                SelectionChanged="MulticamAngle_SelectionChanged" />
+                                        </shared:EditorRow.RowContent>
+                                    </shared:EditorRow>
+                                    <Button
+                                        x:Name="MulticamSwitchBtn"
+                                        Content="Apply angle"
+                                        HorizontalAlignment="Stretch"
+                                        Click="MulticamSwitch_Click" />
+                                    <TextBlock
+                                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                        Text="Creates and ungroups via agent tools (manage_multicam). Multi-angle layouts and overlays are available in preview."
+                                        TextWrapping="WrapWholeWords" />
+                                </StackPanel>
+                            </shared:SectionHeader.SectionContent>
+                        </shared:SectionHeader>
+                    </StackPanel>
+                </StackPanel>
+
+                <local:AiEditControl x:Name="AiEdit" Visibility="Collapsed" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

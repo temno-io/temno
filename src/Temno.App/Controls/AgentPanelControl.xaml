@@ -1,0 +1,449 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Temno.App.Controls.AgentPanelControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:shared="using:Temno.App.Controls.Shared">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border
+            Height="{StaticResource Layout.PanelHeaderHeight}"
+            Background="{StaticResource AppTheme.Background.Surface}"
+            BorderBrush="{StaticResource AppTheme.Border.Primary}"
+            BorderThickness="0,0,0,1"
+            Padding="{StaticResource AppTheme.Padding.HMd}">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <StackPanel
+                VerticalAlignment="Stretch"
+                Orientation="Horizontal"
+                Spacing="{StaticResource AppTheme.Spacing.LgXl}">
+                <!-- WP-189: the selected tab carries a structural indicator (2 px accent bar), not only a foreground change. -->
+                <Grid x:Name="ChatTabCell">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Button
+                        x:Name="ChatTabButton"
+                        Padding="{StaticResource AppTheme.Padding.None}"
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="Chat tab, selected"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="ChatTab_Click"
+                        Content="Chat"
+                        FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource AppTheme.Text.Primary}"
+                        ToolTipService.ToolTip="Chat with the editor agent" />
+                    <Border
+                        x:Name="ChatTabIndicator"
+                        Grid.Row="1"
+                        Height="2"
+                        Background="{StaticResource AppTheme.Accent.Timecode}"
+                        CornerRadius="1" />
+                </Grid>
+                <Grid x:Name="ToolsTabCell">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Button
+                        x:Name="ToolsTabButton"
+                        Padding="{StaticResource AppTheme.Padding.None}"
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="Tools tab"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="ToolsTab_Click"
+                        Content="Tools"
+                        FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                        ToolTipService.ToolTip="Tools console — runs editor commands directly, without a chat model" />
+                    <Border
+                        x:Name="ToolsTabIndicator"
+                        Grid.Row="1"
+                        Height="2"
+                        Background="{StaticResource AppTheme.Accent.Timecode}"
+                        CornerRadius="1"
+                        Visibility="Collapsed" />
+                </Grid>
+            </StackPanel>
+                <!-- WP-251: Mac AgentPanelView's New chat and Chat history, on the Chat tab only. -->
+                <StackPanel x:Name="ChatActions" Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
+                    <Button x:Name="NewChatButton" Click="NewChat_Click" Background="Transparent" BorderThickness="0"
+                            Padding="{StaticResource AppTheme.Padding.Xs}" AutomationProperties.Name="New chat"
+                            ToolTipService.ToolTip="New chat — keeps this conversation in history and starts an empty one">
+                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}"
+                                           Fill="{StaticResource AppTheme.Text.Secondary}" Icon="{x:Bind shared:Icons.Add}" />
+                    </Button>
+                    <Button x:Name="HistoryButton" Click="History_Click" Background="Transparent" BorderThickness="0"
+                            Padding="{StaticResource AppTheme.Padding.Xs}" AutomationProperties.Name="Chat history"
+                            ToolTipService.ToolTip="Chat history — this project's earlier conversations">
+                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}"
+                                           Fill="{StaticResource AppTheme.Text.Secondary}" Icon="{x:Bind shared:Icons.History}" />
+                    </Button>
+                </StackPanel>
+                <Button Grid.Column="2" Click="ClosePanel_Click" Background="Transparent" BorderThickness="0"
+                        Padding="{StaticResource AppTheme.Padding.Xs}" AutomationProperties.Name="Close Agent"
+                        ToolTipService.ToolTip="Close Agent and return to Inspector">
+                    <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}"
+                                       Fill="{StaticResource AppTheme.Text.Secondary}" Icon="{x:Bind shared:Icons.Dismiss}" />
+                </Button>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid x:Name="ChatPane">
+                <ScrollViewer
+                    x:Name="ChatScroll"
+                    Padding="{StaticResource AppTheme.Padding.Md}"
+                    Visibility="Collapsed">
+                    <StackPanel x:Name="ChatHost" Spacing="{StaticResource AppTheme.Spacing.SmMd}" />
+                </ScrollViewer>
+                <Grid
+                    x:Name="MissingKeyState"
+                    Padding="{StaticResource AppTheme.Padding.Lg}">
+                    <!-- WP-189: one Connect card. Open Settings lands on the AI Chat tab (WP-191 route);
+                         the Tools console is named here so a user without a key still has a path. -->
+                    <Border
+                        MaxWidth="280"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Padding="{StaticResource AppTheme.Padding.Lg}"
+                        Background="{StaticResource AppTheme.Background.Raised}"
+                        BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource AppTheme.CornerRadius.Md}">
+                        <StackPanel Spacing="{StaticResource AppTheme.Spacing.MdLg}">
+                            <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Display}" Height="{StaticResource AppTheme.IconSize.Display}" HorizontalAlignment="Center" Fill="{StaticResource AppTheme.Text.Muted}" Icon="{x:Bind shared:Icons.Chat}" />
+                            <TextBlock
+                                FontSize="{StaticResource AppTheme.FontSize.MdLg}"
+                                FontWeight="SemiBold"
+                                Foreground="{StaticResource AppTheme.Text.Primary}"
+                                Text="Connect a chat model"
+                                TextAlignment="Center"
+                                TextWrapping="WrapWholeWords" />
+                            <TextBlock
+                                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                Text="Sign in for hosted credits, add an Anthropic key in Settings, or use the Tools console."
+                                TextAlignment="Center"
+                                TextWrapping="WrapWholeWords" />
+                            <Button
+                                x:Name="OpenAccountBtn"
+                                HorizontalAlignment="Center"
+                                Style="{StaticResource AccentButtonStyle}"
+                                AutomationProperties.Name="Sign in to hosted chat"
+                                Click="OpenAccount_Click"
+                                Content="Sign in"
+                                ToolTipService.ToolTip="Open the Account sheet for Google sign-in" />
+                            <Button
+                                x:Name="OpenChatSettingsBtn"
+                                HorizontalAlignment="Center"
+                                AutomationProperties.Name="Open Settings to connect a chat model"
+                                Click="OpenSettings_Click"
+                                Content="Open Settings"
+                                ToolTipService.ToolTip="Open Settings on the AI Chat tab" />
+                            <Border Height="1" Background="{StaticResource AppTheme.Border.Subtle}" />
+                            <TextBlock
+                                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                                FontWeight="SemiBold"
+                                Foreground="{StaticResource AppTheme.Text.Secondary}"
+                                Text="No key? Use the Tools console"
+                                TextAlignment="Center"
+                                TextWrapping="WrapWholeWords" />
+                            <TextBlock
+                                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                Text="It runs this editor's commands directly and needs no model."
+                                TextAlignment="Center"
+                                TextWrapping="WrapWholeWords" />
+                            <HyperlinkButton
+                                x:Name="UseToolsLink"
+                                HorizontalAlignment="Center"
+                                AutomationProperties.Name="Open the Tools console"
+                                Click="UseTools_Click"
+                                Content="Open Tools"
+                                ToolTipService.ToolTip="Switch to the Tools console" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+                <Grid
+                    x:Name="EmptyChatState"
+                    Padding="{StaticResource AppTheme.Padding.Lg}"
+                    Visibility="Collapsed">
+                    <StackPanel
+                        MaxWidth="260"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="{StaticResource AppTheme.Spacing.MdLg}">
+                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Display}" Height="{StaticResource AppTheme.IconSize.Display}" HorizontalAlignment="Center" Fill="{StaticResource AppTheme.Text.Muted}" Icon="{x:Bind shared:Icons.Chat}" />
+                        <TextBlock
+                            FontSize="{StaticResource AppTheme.FontSize.MdLg}"
+                            FontWeight="SemiBold"
+                            Foreground="{StaticResource AppTheme.Text.Primary}"
+                            Text="Ask the editor agent"
+                            TextAlignment="Center"
+                            TextWrapping="WrapWholeWords" />
+                        <TextBlock
+                            FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                            Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                            Text="It reads the open project and can edit the timeline. Start with one of these, or write your own."
+                            TextAlignment="Center"
+                            TextWrapping="WrapWholeWords" />
+                        <!-- WP-189: suggestion chips prefill the composer and never send (same rule as WP-129 recipes). -->
+                        <StackPanel x:Name="SuggestionChips" HorizontalAlignment="Center" Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                            <Button
+                                HorizontalAlignment="Center"
+                                Padding="{StaticResource AppTheme.Padding.Control}"
+                                Background="{StaticResource AppTheme.Background.Raised}"
+                                BorderBrush="{StaticResource AppTheme.Border.Primary}"
+                                CornerRadius="{StaticResource AppTheme.CornerRadius.Capsule}"
+                                AutomationProperties.Name="Suggestion: What's on the timeline?"
+                                Click="SuggestionChip_Click"
+                                Content="What's on the timeline?"
+                                FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                Tag="Describe what is on the timeline: tracks, clips and total duration."
+                                ToolTipService.ToolTip="Puts this request in the message box; nothing is sent until you press Send" />
+                            <Button
+                                HorizontalAlignment="Center"
+                                Padding="{StaticResource AppTheme.Padding.Control}"
+                                Background="{StaticResource AppTheme.Background.Raised}"
+                                BorderBrush="{StaticResource AppTheme.Border.Primary}"
+                                CornerRadius="{StaticResource AppTheme.CornerRadius.Capsule}"
+                                AutomationProperties.Name="Suggestion: Remove the silences"
+                                Click="SuggestionChip_Click"
+                                Content="Remove the silences"
+                                FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                Tag="Remove the silent parts from the timeline."
+                                ToolTipService.ToolTip="Puts this request in the message box; nothing is sent until you press Send" />
+                            <Button
+                                HorizontalAlignment="Center"
+                                Padding="{StaticResource AppTheme.Padding.Control}"
+                                Background="{StaticResource AppTheme.Background.Raised}"
+                                BorderBrush="{StaticResource AppTheme.Border.Primary}"
+                                CornerRadius="{StaticResource AppTheme.CornerRadius.Capsule}"
+                                AutomationProperties.Name="Suggestion: Caption the spoken audio"
+                                Click="SuggestionChip_Click"
+                                Content="Caption the spoken audio"
+                                FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                Tag="Add captions from the spoken audio on the timeline."
+                                ToolTipService.ToolTip="Puts this request in the message box; nothing is sent until you press Send" />
+                            <Button
+                                HorizontalAlignment="Center"
+                                Padding="{StaticResource AppTheme.Padding.Control}"
+                                Background="{StaticResource AppTheme.Background.Raised}"
+                                BorderBrush="{StaticResource AppTheme.Border.Primary}"
+                                CornerRadius="{StaticResource AppTheme.CornerRadius.Capsule}"
+                                AutomationProperties.Name="Suggestion: Lower music under speech"
+                                Click="SuggestionChip_Click"
+                                Content="Lower music under speech"
+                                FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                Tag="Lower the music under the speech on the timeline."
+                                ToolTipService.ToolTip="Puts this request in the message box; nothing is sent until you press Send" />
+                        </StackPanel>
+                        <HyperlinkButton
+                            HorizontalAlignment="Center"
+                            AutomationProperties.Name="Write a chat message"
+                            Click="FocusComposer_Click"
+                            Content="Write your own"
+                            ToolTipService.ToolTip="Focus the message box" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <Grid x:Name="ToolsPane" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <!-- WP-189: the console keeps a one-line description at the top of its own pane. -->
+                <TextBlock
+                    Padding="{StaticResource AppTheme.Padding.MdXxs}"
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="Tools console — runs this editor's commands directly, without a chat model. Type help to list them."
+                    TextWrapping="WrapWholeWords" />
+                <ScrollViewer x:Name="ToolsScroll" Grid.Row="1" Padding="{StaticResource AppTheme.Padding.Md}">
+                    <StackPanel x:Name="ToolsHost" Spacing="{StaticResource AppTheme.Spacing.SmMd}" />
+                </ScrollViewer>
+            </Grid>
+
+            <Grid
+                x:Name="ChatBusyOverlay"
+                Background="{StaticResource AppTheme.Background.OverlayScrim}"
+                Visibility="Collapsed"
+                AutomationProperties.Name="Agent request in progress">
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="{StaticResource AppTheme.Spacing.Md}">
+                    <ProgressRing
+                        x:Name="ChatBusyRing"
+                        Width="32"
+                        Height="32"
+                        IsActive="False" />
+                    <TextBlock
+                        x:Name="ChatBusyLabel"
+                        HorizontalAlignment="Center"
+                        FontSize="{StaticResource AppTheme.FontSize.Md}"
+                        Foreground="{StaticResource AppTheme.Text.Primary}"
+                        Text="Waiting…" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <Border
+            Grid.Row="2"
+            Padding="{StaticResource AppTheme.Padding.SmMd}"
+            BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+            BorderThickness="0,1,0,0">
+            <Grid RowSpacing="{StaticResource AppTheme.Spacing.Xs}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <StackPanel
+                    x:Name="HostedChatBar"
+                    Spacing="{StaticResource AppTheme.Spacing.Xs}"
+                    Visibility="Collapsed">
+                    <ComboBox
+                        x:Name="HostedModelBox"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.Name="Hosted chat model"
+                        FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                        SelectionChanged="HostedModel_SelectionChanged"
+                        ToolTipService.ToolTip="Hosted model. Switching model starts a new quote." />
+                    <ComboBox
+                        x:Name="HostedEffortBox"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.Name="Hosted chat effort"
+                        FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                        SelectionChanged="HostedEffort_SelectionChanged"
+                        ToolTipService.ToolTip="Every effort the catalog lists for this model" />
+                    <Grid
+                        x:Name="HostedReasoningRow"
+                        ColumnSpacing="{StaticResource AppTheme.Spacing.Md}"
+                        Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                            Foreground="{StaticResource AppTheme.Text.Secondary}"
+                            Text="Reasoning"
+                            TextWrapping="WrapWholeWords" />
+                        <ToggleSwitch
+                            x:Name="HostedReasoningSwitch"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="Hosted reasoning"
+                            OffContent="Off"
+                            OnContent="On"
+                            Toggled="HostedReasoning_Toggled"
+                            ToolTipService.ToolTip="Off uses the catalog's qualified off-reasoning efforts when the model has them" />
+                    </Grid>
+                    <TextBlock
+                        x:Name="HostedEstimateText"
+                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                        TextWrapping="WrapWholeWords" />
+                    <TextBlock
+                        x:Name="HostedChargeText"
+                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                        Foreground="{StaticResource AppTheme.Text.Secondary}"
+                        TextWrapping="WrapWholeWords" />
+                </StackPanel>
+                <!--  WP-400: a pending hosted turn this PC did not send. It runs only on Run; Discard drops it.  -->
+                <InfoBar
+                    x:Name="PendingTurnBar"
+                    Grid.Row="1"
+                    HorizontalAlignment="Stretch"
+                    AutomationProperties.Name="Message not sent from this PC"
+                    IsClosable="False"
+                    IsOpen="False"
+                    Severity="Informational"
+                    Title="Not sent from this PC">
+                    <StackPanel Padding="{StaticResource AppTheme.Padding.RightSmBottomXs}" Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                        <TextBlock
+                            x:Name="PendingTurnMessage"
+                            FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                            Foreground="{StaticResource AppTheme.Text.Primary}"
+                            IsTextSelectionEnabled="True"
+                            MaxLines="3"
+                            TextTrimming="CharacterEllipsis"
+                            TextWrapping="WrapWholeWords" />
+                        <TextBlock
+                            x:Name="PendingTurnNote"
+                            FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                            Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                            TextWrapping="WrapWholeWords"
+                            Visibility="Collapsed" />
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                            <Button
+                                x:Name="RunPendingButton"
+                                AutomationProperties.Name="Run the message that was not sent from this PC"
+                                Click="RunPending_Click"
+                                Content="Run"
+                                Style="{StaticResource AccentButtonStyle}"
+                                ToolTipService.ToolTip="Send it now. It is quoted and held like a new message, and the agent asks before exports, outside files and paid generations." />
+                            <Button
+                                x:Name="DiscardPendingButton"
+                                AutomationProperties.Name="Discard the message that was not sent from this PC"
+                                Click="DiscardPending_Click"
+                                Content="Discard"
+                                ToolTipService.ToolTip="Drop it from this chat without sending it" />
+                        </StackPanel>
+                    </StackPanel>
+                </InfoBar>
+                <InfoBar
+                    x:Name="ChatErrorBar"
+                    Grid.Row="2"
+                    HorizontalAlignment="Stretch"
+                    IsClosable="True"
+                    IsOpen="False"
+                    Severity="Error"
+                    Title="Agent" />
+                <Grid Grid.Row="3" ColumnSpacing="{StaticResource AppTheme.Spacing.Sm}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <!--  WP-257: Mac AgentInputBox parity. Wraps, grows to the cap, then scrolls; Enter sends, Shift+Enter adds a line.  -->
+                    <TextBox
+                        x:Name="InputBox"
+                        MaxHeight="{StaticResource AppTheme.ComponentSize.ChatComposerMaxHeight}"
+                        AcceptsReturn="True"
+                        AutomationProperties.Name="Chat message"
+                        PreviewKeyDown="InputBox_PreviewKeyDown"
+                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                        TextChanged="InputBox_TextChanged"
+                        TextWrapping="Wrap"
+                        PlaceholderText="Message the editor agent"
+                        ToolTipService.ToolTip="Message the editor agent" />
+                    <Button
+                        x:Name="SendButton"
+                        Grid.Column="1"
+                        VerticalAlignment="Bottom"
+                        AutomationProperties.Name="Send chat message"
+                        Click="Send_Click"
+                        Content="Send"
+                        ToolTipService.ToolTip="Send" />
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

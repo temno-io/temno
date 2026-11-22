@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Temno.App.Controls.TimelineControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:shared="using:Temno.App.Controls.Shared"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="{StaticResource AppTheme.Background.Surface}">
+        <!-- Hidden tools kept for code-behind names; chrome lives on EditorPage (Mac ToolbarView). -->
+        <Canvas Visibility="Collapsed" IsHitTestVisible="False">
+            <ToggleButton x:Name="ModeSelect" Click="Mode_Click" Content="Select" IsChecked="True" Tag="Select" />
+            <ToggleButton x:Name="ModeTrim" Click="Mode_Click" Content="Trim" Tag="Trim" />
+            <ToggleButton x:Name="ModeBlade" Click="Mode_Click" Content="Blade" Tag="Blade" />
+            <ToggleButton x:Name="ToggleRipple" Click="Option_Click" Content="Ripple" IsChecked="True" />
+            <ToggleButton x:Name="ToggleOverwrite" Click="Option_Click" Content="Overwrite" />
+            <ToggleButton x:Name="ToggleSnap" Click="Option_Click" Content="Snap" IsChecked="True" />
+            <TextBlock x:Name="ZoomLabel" Text="Zoom" />
+            <TextBlock x:Name="PlayheadLabel" Text="00:00:00" />
+            <Button x:Name="ZoomOutBtn" Click="ZoomOut_Click" AutomationProperties.Name="Zoom out" ToolTipService.ToolTip="Zoom out" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind ZoomOutBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.Subtract}" /></Button>
+            <Button x:Name="ZoomInBtn" Click="ZoomIn_Click" AutomationProperties.Name="Zoom in" ToolTipService.ToolTip="Zoom in" ><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind ZoomInBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.Add}" /></Button>
+            <Button Click="Fit_Click" Content="Fit" />
+        </Canvas>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <!-- WP-196: 116 fits the 18px grip + label + H/S toggles (was 100, label starved). -->
+                <ColumnDefinition x:Name="HeaderCol" Width="{StaticResource AppTheme.Grid.TrackHeaderWidth}" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Grid x:Name="HeaderColumn">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="{StaticResource AppTheme.Grid.SourceTabsHeight}" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Border
+                    Background="{StaticResource AppTheme.Background.Raised}"
+                    BorderBrush="{StaticResource AppTheme.Border.Primary}"
+                    BorderThickness="0,0,1,1">
+                    <Grid Padding="{StaticResource AppTheme.Padding.HXs}" ColumnSpacing="{StaticResource AppTheme.Spacing.Xs}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button
+                            x:Name="AddVideoTrackBtn"
+                            Grid.Column="0"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center"
+                            MinWidth="0"
+                            MinHeight="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}"
+                            Padding="{StaticResource AppTheme.Padding.XsXxs}"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="{StaticResource AppTheme.Text.Secondary}"
+                            CornerRadius="{StaticResource AppTheme.CornerRadius.XsSm}"
+                            Click="AddVideoTrack_Click"
+                            AutomationProperties.Name="Add video track"
+                            ToolTipService.ToolTip="Add video track above">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                <shared:FluentIcon VerticalAlignment="Center" Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind AddVideoTrackBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.Add}" />
+                                <TextBlock VerticalAlignment="Center" FontSize="{StaticResource AppTheme.FontSize.Sm}" Text="Video" />
+                            </StackPanel>
+                        </Button>
+                        <Button
+                            x:Name="AddAudioTrackBtn"
+                            Grid.Column="1"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center"
+                            MinWidth="0"
+                            MinHeight="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}"
+                            Padding="{StaticResource AppTheme.Padding.XsXxs}"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="{StaticResource AppTheme.Text.Secondary}"
+                            CornerRadius="{StaticResource AppTheme.CornerRadius.XsSm}"
+                            Click="AddAudioTrack_Click"
+                            AutomationProperties.Name="Add audio track"
+                            ToolTipService.ToolTip="Add audio track below">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                <shared:FluentIcon VerticalAlignment="Center" Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{x:Bind AddAudioTrackBtn.Foreground, Mode=OneWay}" Icon="{x:Bind shared:Icons.Add}" />
+                                <TextBlock VerticalAlignment="Center" FontSize="{StaticResource AppTheme.FontSize.Sm}" Text="Audio" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Border>
+                <ScrollViewer
+                    x:Name="HeaderScroll"
+                    Grid.Row="1"
+                    Background="Transparent"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Hidden"
+                    RightTapped="HeaderCanvas_RightTapped"
+                    ViewChanged="HeaderScroll_ViewChanged">
+                    <Canvas
+                        x:Name="HeaderCanvas"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Background="Transparent"
+                        PointerCaptureLost="HeaderCanvas_PointerCaptureLost"
+                        PointerMoved="HeaderCanvas_PointerMoved"
+                        PointerReleased="HeaderCanvas_PointerReleased"
+                        PointerWheelChanged="Timeline_PointerWheelChanged" />
+                </ScrollViewer>
+            </Grid>
+
+            <Grid x:Name="BodyColumn" Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="{StaticResource AppTheme.Grid.SourceTabsHeight}" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid
+                    x:Name="RulerHost"
+                    Grid.Row="0"
+                    AllowDrop="True"
+                    Background="{StaticResource AppTheme.Background.Raised}"
+                    DragEnter="LaneCanvas_DragOver"
+                    DragLeave="LaneCanvas_DragLeave"
+                    DragOver="LaneCanvas_DragOver"
+                    Drop="LaneCanvas_Drop"
+                    PointerCaptureLost="RulerCanvas_PointerCaptureLost"
+                    PointerMoved="RulerCanvas_PointerMoved"
+                    PointerPressed="RulerCanvas_PointerPressed"
+                    PointerReleased="RulerCanvas_PointerReleased"
+                    PointerWheelChanged="Timeline_PointerWheelChanged">
+                    <Canvas
+                        x:Name="RulerCanvas"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Background="Transparent">
+                        <Canvas.RenderTransform>
+                            <TranslateTransform x:Name="RulerTransform" />
+                        </Canvas.RenderTransform>
+                    </Canvas>
+                    <Border
+                        Height="1"
+                        VerticalAlignment="Bottom"
+                        Background="{StaticResource AppTheme.Border.Primary}"
+                        IsHitTestVisible="False" />
+                    <Canvas
+                        x:Name="RulerOverlayCanvas"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        IsHitTestVisible="True">
+                        <Border
+                            x:Name="RulerPlayheadLine"
+                            Width="2"
+                            Background="{StaticResource AppTheme.Accent.Timecode}"
+                            IsHitTestVisible="False">
+                            <Border.RenderTransform>
+                                <TranslateTransform x:Name="RulerPlayheadTransform" />
+                            </Border.RenderTransform>
+                        </Border>
+                        <Polygon
+                            x:Name="PlayheadHead"
+                            Fill="{StaticResource AppTheme.Accent.Timecode}"
+                            IsHitTestVisible="True"
+                            Points="0,0 8,0 4,8"
+                            PointerCaptureLost="Playhead_PointerCaptureLost"
+                            PointerMoved="Playhead_PointerMoved"
+                            PointerPressed="Playhead_PointerPressed"
+                            PointerReleased="Playhead_PointerReleased">
+                            <Polygon.RenderTransform>
+                                <TranslateTransform x:Name="PlayheadHeadTransform" X="-3" />
+                            </Polygon.RenderTransform>
+                        </Polygon>
+                    </Canvas>
+                </Grid>
+
+                <ScrollViewer
+                    x:Name="BodyScroll"
+                    Grid.Row="1"
+                    AllowDrop="True"
+                    Background="{StaticResource AppTheme.Background.Surface}"
+                    DragEnter="LaneCanvas_DragOver"
+                    DragLeave="LaneCanvas_DragLeave"
+                    DragOver="LaneCanvas_DragOver"
+                    Drop="LaneCanvas_Drop"
+                    HorizontalScrollBarVisibility="Auto"
+                    HorizontalScrollMode="Enabled"
+                    VerticalScrollBarVisibility="Auto"
+                    VerticalScrollMode="Enabled"
+                    ViewChanged="BodyScroll_ViewChanged">
+                    <Grid
+                        x:Name="BodyContent"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        PointerExited="TimelineBody_PointerExited"
+                        PointerWheelChanged="Timeline_PointerWheelChanged">
+                        <Canvas
+                            x:Name="LaneCanvas"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Background="{StaticResource AppTheme.Background.Surface}"
+                            PointerMoved="LaneCanvas_PointerMoved"
+                            PointerCaptureLost="LaneCanvas_PointerCaptureLost"
+                            PointerPressed="LaneCanvas_PointerPressed"
+                            PointerReleased="LaneCanvas_PointerReleased" />
+                        <Canvas
+                            x:Name="OverlayCanvas"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            IsHitTestVisible="True">
+                            <Border
+                                x:Name="PlayheadLine"
+                                Width="2"
+                                Background="{StaticResource AppTheme.Accent.Timecode}"
+                                IsHitTestVisible="False"
+                                PointerCaptureLost="Playhead_PointerCaptureLost"
+                                PointerMoved="Playhead_PointerMoved"
+                                PointerPressed="Playhead_PointerPressed"
+                                PointerReleased="Playhead_PointerReleased">
+                                <Border.RenderTransform>
+                                    <TranslateTransform x:Name="PlayheadTransform" />
+                                </Border.RenderTransform>
+                            </Border>
+                            <Grid
+                                x:Name="BladeCursorIndicator"
+                                Canvas.ZIndex="3"
+                                Width="26"
+                                Height="30"
+                                IsHitTestVisible="False"
+                                Visibility="Collapsed">
+                                <Polygon
+                                    Fill="{StaticResource AppTheme.Accent.Timecode}"
+                                    Points="10,21 16,21 13,30" />
+                                <Border
+                                    Width="24"
+                                    Height="24"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Top"
+                                    Background="{StaticResource AppTheme.Background.Prominent}"
+                                    BorderBrush="{StaticResource AppTheme.Border.Primary}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource AppTheme.CornerRadius.Capsule}">
+                                    <shared:FluentIcon
+                                        Width="{StaticResource AppTheme.IconSize.Xs}"
+                                        Height="{StaticResource AppTheme.IconSize.Xs}"
+
+                                        Fill="{StaticResource AppTheme.Accent.Primary}"
+                                        Icon="{x:Bind shared:Icons.Cut}" />
+                                </Border>
+                            </Grid>
+                        </Canvas>
+                    </Grid>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+
+        <Grid
+            x:Name="EmptyState"
+            Background="{StaticResource AppTheme.Background.Surface}"
+            Visibility="Collapsed"
+            AllowDrop="True"
+            DragEnter="LaneCanvas_DragOver"
+            DragLeave="LaneCanvas_DragLeave"
+            DragOver="LaneCanvas_DragOver"
+            Drop="LaneCanvas_Drop">
+            <StackPanel
+                MaxWidth="240"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="{StaticResource AppTheme.Spacing.MdLg}">
+                <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Display}" Height="{StaticResource AppTheme.IconSize.Display}" HorizontalAlignment="Center" Fill="{StaticResource AppTheme.Text.Muted}" Icon="{x:Bind shared:Icons.Video}" />
+                <TextBlock
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    FontWeight="SemiBold"
+                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                    Text="No clips on this timeline"
+                    TextAlignment="Center"
+                    TextWrapping="WrapWholeWords" />
+                <TextBlock
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="Drag a file from the Media library onto a track."
+                    TextAlignment="Center"
+                    TextWrapping="WrapWholeWords" />
+                <Button
+                    x:Name="EmptyImportBtn"
+                    HorizontalAlignment="Center"
+                    AutomationProperties.Name="Import media onto the timeline"
+                    Click="EmptyImport_Click"
+                    Content="Import media"
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    ToolTipService.ToolTip="Import video, image, or audio files" />
+            </StackPanel>
+        </Grid>
+        <!-- WP-150: drop ghost above opaque EmptyState. Not hit-testable; playhead stays on OverlayCanvas. -->
+        <Grid IsHitTestVisible="False">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="{StaticResource AppTheme.Grid.SourceTabsHeight}" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="{StaticResource AppTheme.Grid.TrackHeaderWidth}" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Canvas
+                x:Name="DropOverlayCanvas"
+                Grid.Row="1"
+                Grid.Column="1"
+                IsHitTestVisible="False" />
+        </Grid>
+    </Grid>
+</UserControl>

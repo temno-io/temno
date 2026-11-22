@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Temno.App.Controls.PreviewHostControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:shared="using:Temno.App.Controls.Shared">
+
+    <!-- Mac PreviewContainerView: tab bar → canvas → scrub → transport (36) -->
+    <Grid Background="{StaticResource AppTheme.Background.Surface}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="{StaticResource AppTheme.Grid.SourceTabsHeight}" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="{StaticResource AppTheme.Grid.PreviewScrubHeight}" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border
+            Background="{StaticResource AppTheme.Background.Base}"
+            BorderBrush="{StaticResource AppTheme.Border.Primary}"
+            BorderThickness="0,0,0,1"
+            Padding="{StaticResource AppTheme.Padding.TransportTab}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.None}">
+                    <Button
+                        x:Name="BtnTabBack"
+                        Width="22"
+                        Height="22"
+                        Padding="{StaticResource AppTheme.Padding.None}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="TabBack_Click"
+                        Foreground="{StaticResource AppTheme.Text.Secondary}"
+                        AutomationProperties.Name="Previous preview tab"
+                        ToolTipService.ToolTip="Previous preview tab">
+                        <shared:FluentIcon
+                            Width="{StaticResource AppTheme.IconSize.Xs}"
+                            Height="{StaticResource AppTheme.IconSize.Xs}"
+                            Fill="{StaticResource AppTheme.Text.Secondary}"
+                            Icon="{x:Bind shared:Icons.ChevronLeft}" />
+                    </Button>
+                    <Button
+                        x:Name="BtnTabForward"
+                        Width="22"
+                        Height="22"
+                        Padding="{StaticResource AppTheme.Padding.None}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="TabForward_Click"
+                        Foreground="{StaticResource AppTheme.Text.Secondary}"
+                        AutomationProperties.Name="Next preview tab"
+                        ToolTipService.ToolTip="Next preview tab">
+                        <shared:FluentIcon
+                            Width="{StaticResource AppTheme.IconSize.Xs}"
+                            Height="{StaticResource AppTheme.IconSize.Xs}"
+                            Fill="{StaticResource AppTheme.Text.Secondary}"
+                            Icon="{x:Bind shared:Icons.ChevronRight}" />
+                    </Button>
+                </StackPanel>
+                <ScrollViewer
+                    Grid.Column="1"
+                    Margin="{StaticResource AppTheme.Padding.HXs}"
+                    HorizontalScrollBarVisibility="Auto"
+                    IsTabStop="False"
+                    VerticalScrollBarVisibility="Disabled">
+                    <StackPanel
+                        x:Name="PreviewTabStrip"
+                        VerticalAlignment="Stretch"
+                        Orientation="Horizontal"
+                        Spacing="{StaticResource AppTheme.Spacing.Xxs}" />
+                </ScrollViewer>
+                <Button
+                    x:Name="BtnCloseAllTabs"
+                    Grid.Column="2"
+                    Width="22"
+                    Height="22"
+                    Padding="{StaticResource AppTheme.Padding.None}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="PreviewMore_Click"
+                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                    AutomationProperties.Name="Preview options"
+                    ToolTipService.ToolTip="Preview options">
+                    <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Secondary}" Icon="{x:Bind shared:Icons.MoreHorizontal}" />
+                </Button>
+                <Button
+                    x:Name="BtnCanvasSize"
+                    Grid.Column="3"
+                    Margin="{StaticResource AppTheme.Padding.LeftXxs}"
+                    MinWidth="0"
+                    MinHeight="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}"
+                    Padding="{StaticResource AppTheme.Padding.HXs}"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    CornerRadius="{StaticResource AppTheme.CornerRadius.XsSm}"
+                    Click="CanvasSize_Click"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    AutomationProperties.Name="Canvas size"
+                    ToolTipService.ToolTip="Canvas size &amp; aspect ratio">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                        <TextBlock
+                            x:Name="ResolutionLabel"
+                            VerticalAlignment="Center"
+                            FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                            Foreground="{x:Bind BtnCanvasSize.Foreground, Mode=OneWay}"
+                            Text="—" />
+                        <shared:FluentIcon
+                            Width="10"
+                            Height="10"
+                            VerticalAlignment="Center"
+                            Fill="{x:Bind BtnCanvasSize.Foreground, Mode=OneWay}"
+                            Icon="{x:Bind shared:Icons.ChevronDown}" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <Border
+            Grid.Row="1"
+            Background="{StaticResource AppTheme.Background.PreviewCanvas}">
+            <Grid x:Name="PreviewCanvasGrid" SizeChanged="GuideOverlay_SizeChanged">
+                <MediaPlayerElement
+                    x:Name="SourceVideoPlayer"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    AllowFocusOnInteraction="False"
+                    AreTransportControlsEnabled="False"
+                    IsTabStop="False"
+                    Stretch="Uniform"
+                    Visibility="Collapsed" />
+                <Image
+                    x:Name="PreviewImage"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Stretch="Uniform" />
+                <!-- WP-145: guides draw above the frame and below the placeholder. Hit-test
+                     transparent so the caption-overlay drag from WP-130 is unaffected. -->
+                <Canvas
+                    x:Name="GuideOverlay"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    AutomationProperties.Name="Preview guides overlay"
+                    IsHitTestVisible="False" />
+                <StackPanel
+                    x:Name="Placeholder"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                    <TextBlock
+                        x:Name="PlaceholderText"
+                        HorizontalAlignment="Center"
+                        FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                        Opacity="0.55"
+                        Text="No frame at playhead" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border
+            x:Name="ScrubBar"
+            Grid.Row="2"
+            Padding="{StaticResource AppTheme.Padding.HMd}"
+            Background="{StaticResource AppTheme.Background.Base}"
+            PointerCanceled="ScrubBar_PointerCanceled"
+            PointerCaptureLost="ScrubBar_PointerCaptureLost"
+            PointerMoved="ScrubBar_PointerMoved"
+            PointerPressed="ScrubBar_PointerPressed"
+            PointerReleased="ScrubBar_PointerReleased">
+            <Grid VerticalAlignment="Center" Height="4">
+                <Border
+                    Background="{StaticResource AppTheme.Border.Subtle}"
+                    CornerRadius="{StaticResource AppTheme.CornerRadius.Xxs}" />
+                <Border
+                    x:Name="ScrubFill"
+                    Width="0"
+                    HorizontalAlignment="Left"
+                    Background="{StaticResource AppTheme.Accent.Timecode}"
+                    CornerRadius="{StaticResource AppTheme.CornerRadius.Xxs}" />
+            </Grid>
+        </Border>
+
+        <!-- Mac transport: TC left · controls center · Fit right. WP-185: the timecode and the
+             buttons keep their minimums; the renderer label is the first thing to go when the
+             row gets narrow (TransportBar_SizeChanged). -->
+        <Grid
+            x:Name="TransportBar"
+            Grid.Row="3"
+            Padding="{StaticResource AppTheme.Padding.HMd}"
+            Background="{StaticResource AppTheme.Background.Base}"
+            SizeChanged="TransportBar_SizeChanged">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="36" />
+                <RowDefinition x:Name="CompactTransportRow" Height="0" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="176" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" MinWidth="72" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel
+                VerticalAlignment="Center"
+                Orientation="Horizontal"
+                Spacing="{StaticResource AppTheme.Spacing.Xs}">
+                <TextBlock
+                    x:Name="PlayheadText"
+                    VerticalAlignment="Center"
+                    FontFamily="{StaticResource AppTheme.FontFamily.Mono}"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    Foreground="{StaticResource AppTheme.Text.Body}"
+                    Text="00:00:00:00" />
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="/" />
+                <TextBlock
+                    x:Name="DurationText"
+                    VerticalAlignment="Center"
+                    FontFamily="{StaticResource AppTheme.FontFamily.Mono}"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="00:00:00:00" />
+            </StackPanel>
+
+            <StackPanel
+                x:Name="TransportButtons"
+                Grid.Column="1"
+                VerticalAlignment="Center"
+                Orientation="Horizontal"
+                Spacing="{StaticResource AppTheme.Spacing.None}">
+                <Button
+                    x:Name="BtnToStart"
+                    MinWidth="30"
+                    Height="28"
+                    Padding="{StaticResource AppTheme.Padding.None}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="ToStart_Click"
+                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                    AutomationProperties.Name="Go to start"
+                    ToolTipService.ToolTip="Go to start">
+                    <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Secondary}" Icon="{x:Bind shared:Icons.Rewind}" />
+                </Button>
+                <Button
+                    x:Name="BtnStepBack"
+                    MinWidth="30"
+                    Height="28"
+                    Padding="{StaticResource AppTheme.Padding.None}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="StepBack_Click"
+                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                    AutomationProperties.Name="Previous frame"
+                    ToolTipService.ToolTip="Previous frame">
+                    <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Secondary}" Icon="{x:Bind shared:Icons.ArrowPrevious}">
+                    </shared:FluentIcon>
+                </Button>
+                <Button
+                    x:Name="BtnPlay"
+                    MinWidth="30"
+                    Height="28"
+                    Padding="{StaticResource AppTheme.Padding.None}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="Play_Click"
+                    Foreground="{StaticResource AppTheme.Text.Primary}"
+                    AutomationProperties.Name="Play pause"
+                    ToolTipService.ToolTip="Play / Pause (Space)">
+                    <shared:FluentIcon x:Name="PlayIcon" Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.Play}" />
+                </Button>
+                <Button
+                    x:Name="BtnStepFwd"
+                    MinWidth="30"
+                    Height="28"
+                    Padding="{StaticResource AppTheme.Padding.None}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="StepFwd_Click"
+                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                    AutomationProperties.Name="Next frame"
+                    ToolTipService.ToolTip="Next frame">
+                    <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Secondary}" Icon="{x:Bind shared:Icons.ArrowNext}" />
+                </Button>
+                <Button
+                    x:Name="BtnToEnd"
+                    MinWidth="30"
+                    Height="28"
+                    Padding="{StaticResource AppTheme.Padding.None}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="ToEnd_Click"
+                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                    AutomationProperties.Name="Go to end"
+                    ToolTipService.ToolTip="Go to end">
+                    <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Secondary}" Icon="{x:Bind shared:Icons.FastForward}" />
+                </Button>
+            </StackPanel>
+
+            <StackPanel
+                Grid.Column="2"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Orientation="Horizontal"
+                Spacing="{StaticResource AppTheme.Spacing.SmMd}">
+                <ProgressRing
+                    x:Name="AudioPrepareRing"
+                    Width="16"
+                    Height="16"
+                    IsActive="False"
+                    Visibility="Collapsed"
+                    ToolTipService.ToolTip="Preparing audio — pause or Space cancels" />
+                <TextBlock
+                    x:Name="AudioStatusLabel"
+                    MaxWidth="190"
+                    ToolTipService.ToolTip="{Binding Text, ElementName=AudioStatusLabel}"
+                    VerticalAlignment="Center"
+                    FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                    Foreground="{StaticResource AppTheme.Status.Warning}"
+                    TextTrimming="CharacterEllipsis"
+                    Visibility="Collapsed" />
+                <TextBlock
+                    x:Name="StatusLabel"
+                    MaxWidth="150"
+                    ToolTipService.ToolTip="{Binding Text, ElementName=StatusLabel}"
+                    VerticalAlignment="Center"
+                    FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text=""
+                    TextTrimming="CharacterEllipsis"
+                    Visibility="Collapsed" />
+                <Button
+                    x:Name="BtnPreviewResolution"
+                    MinWidth="0"
+                    MinHeight="24"
+                    Padding="{StaticResource AppTheme.Padding.HXs}"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    CornerRadius="{StaticResource AppTheme.CornerRadius.XsSm}"
+                    Click="PreviewResolution_Click"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    AutomationProperties.Name="Frame preview resolution"
+                    ToolTipService.ToolTip="Frame preview resolution — playback and scrub quality only; export always renders at full output resolution">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                        <TextBlock
+                            x:Name="PreviewResolutionLabel"
+                            VerticalAlignment="Center"
+                            FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                            Foreground="{x:Bind BtnPreviewResolution.Foreground, Mode=OneWay}"
+                            Text="Frame preview · 720p" />
+                        <shared:FluentIcon
+                            Width="10"
+                            Height="10"
+                            VerticalAlignment="Center"
+                            Fill="{x:Bind BtnPreviewResolution.Foreground, Mode=OneWay}"
+                            Icon="{x:Bind shared:Icons.ChevronDown}" />
+                    </StackPanel>
+                </Button>
+                <!-- WP-145: capture frame + guides. Both named and tooltipped; the two unnamed
+                     transport buttons are a pre-existing gap recorded in the WP, not fixed here. -->
+                <Button
+                    x:Name="BtnCaptureFrame"
+                    MinWidth="32"
+                    MinHeight="24"
+                    Padding="{StaticResource AppTheme.Padding.SmXxs}"
+                    AutomationProperties.Name="Capture frame to media"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="CaptureFrame_Click"
+                    ToolTipService.ToolTip="Capture the current frame into the media library">
+                    <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Sm}" Height="{StaticResource AppTheme.IconSize.Sm}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.Camera}" />
+                </Button>
+                <Button
+                    x:Name="BtnGuides"
+                    MinWidth="32"
+                    MinHeight="24"
+                    Padding="{StaticResource AppTheme.Padding.SmXxs}"
+                    AutomationProperties.Name="Canvas guides"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    ToolTipService.ToolTip="Grid, safe zones and format references">
+                    <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Sm}" Height="{StaticResource AppTheme.IconSize.Sm}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.Grid}" />
+                    <Button.Flyout>
+                        <MenuFlyout
+                            x:Name="GuideFlyout"
+                            Closed="GuideFlyout_Closed"
+                            Opening="GuideFlyout_Opening"
+                            Placement="TopEdgeAlignedRight"
+                            ShouldConstrainToRootBounds="True">
+                            <ToggleMenuFlyoutItem
+                                x:Name="GuideHideItem"
+                                AutomationProperties.Name="Hide guides"
+                                Click="GuideHide_Click"
+                                Text="Hide guides"
+                                ToolTipService.ToolTip="Turn every overlay off without losing the current selection" />
+                            <MenuFlyoutSeparator />
+                            <RadioMenuFlyoutItem x:Name="GridNoneItem" AutomationProperties.Name="No grid" Click="GuideGrid_Click" GroupName="PreviewGrid" Text="No grid" ToolTipService.ToolTip="No composition grid" />
+                            <RadioMenuFlyoutItem x:Name="Grid2Item" AutomationProperties.Name="Grid 2 x 2" Click="GuideGrid_Click" GroupName="PreviewGrid" Text="Grid 2 x 2" ToolTipService.ToolTip="2 by 2 grid" />
+                            <RadioMenuFlyoutItem x:Name="Grid3Item" AutomationProperties.Name="Grid 3 x 3" Click="GuideGrid_Click" GroupName="PreviewGrid" Text="Grid 3 x 3" ToolTipService.ToolTip="Rule of thirds" />
+                            <RadioMenuFlyoutItem x:Name="Grid4Item" AutomationProperties.Name="Grid 4 x 4" Click="GuideGrid_Click" GroupName="PreviewGrid" Text="Grid 4 x 4" ToolTipService.ToolTip="4 by 4 grid" />
+                            <RadioMenuFlyoutItem x:Name="Grid5Item" AutomationProperties.Name="Grid 5 x 5" Click="GuideGrid_Click" GroupName="PreviewGrid" Text="Grid 5 x 5" ToolTipService.ToolTip="5 by 5 grid" />
+                            <MenuFlyoutSeparator />
+                            <ToggleMenuFlyoutItem x:Name="SafeActionItem" AutomationProperties.Name="Action safe" Click="GuideSafe_Click" Text="Action safe" ToolTipService.ToolTip="90 percent action-safe rectangle" />
+                            <ToggleMenuFlyoutItem x:Name="SafeTitleItem" AutomationProperties.Name="Title safe" Click="GuideSafe_Click" Text="Title safe" ToolTipService.ToolTip="80 percent title-safe rectangle" />
+                            <ToggleMenuFlyoutItem x:Name="SafeCenterItem" AutomationProperties.Name="Center" Click="GuideSafe_Click" Text="Center" ToolTipService.ToolTip="Center crosshair" />
+                            <MenuFlyoutSeparator />
+                            <RadioMenuFlyoutItem x:Name="FormatNoneItem" AutomationProperties.Name="No format reference" Click="GuideFormat_Click" GroupName="PreviewFormat" Text="No format reference" ToolTipService.ToolTip="No aspect crop overlay" />
+                            <RadioMenuFlyoutItem x:Name="FormatScopeItem" AutomationProperties.Name="Scope 2.39:1" Click="GuideFormat_Click" GroupName="PreviewFormat" Text="Scope 2.39:1" ToolTipService.ToolTip="2.39:1 crop reference" />
+                            <RadioMenuFlyoutItem x:Name="FormatWideItem" AutomationProperties.Name="Wide 16:9" Click="GuideFormat_Click" GroupName="PreviewFormat" Text="Wide 16:9" ToolTipService.ToolTip="16:9 crop reference" />
+                            <RadioMenuFlyoutItem x:Name="FormatSquareItem" AutomationProperties.Name="Square 1:1" Click="GuideFormat_Click" GroupName="PreviewFormat" Text="Square 1:1" ToolTipService.ToolTip="1:1 crop reference" />
+                            <RadioMenuFlyoutItem x:Name="FormatPortraitItem" AutomationProperties.Name="Portrait 9:16" Click="GuideFormat_Click" GroupName="PreviewFormat" Text="Portrait 9:16" ToolTipService.ToolTip="9:16 crop reference" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

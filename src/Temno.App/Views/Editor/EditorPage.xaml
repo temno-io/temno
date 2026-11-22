@@ -1,0 +1,1554 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="Temno.App.Views.Editor.EditorPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Temno.App.Controls"
+    xmlns:shared="using:Temno.App.Controls.Shared"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Temno.App.ViewModels"
+    Background="{StaticResource AppTheme.Background.Base}"
+    KeyboardAcceleratorPlacementMode="Hidden"
+    mc:Ignorable="d">
+
+    <Grid
+        x:Name="RootGrid"
+        Padding="{StaticResource AppTheme.Padding.None}"
+        AllowFocusOnInteraction="True"
+        IsTabStop="True"
+        SizeChanged="RootGrid_SizeChanged">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!--
+          Mac TitleBar (Windows-inverted): this strip IS the window title bar (SetTitleBar).
+          Left: menus + agent bubble · Center: project name only · Right: Export + caption inset.
+          No "Temno Windows" brand strip — Mac uses system title for project name only.
+        -->
+        <Grid
+            x:Name="EditorTitleBar"
+            Height="{StaticResource AppTheme.ComponentSize.HeaderHeight}"
+            Background="{StaticResource AppTheme.Background.Surface}"
+            BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+            BorderThickness="0,0,0,1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <!-- Space under Windows min / max / close -->
+                <ColumnDefinition Width="{StaticResource AppTheme.Grid.CaptionButtonsWidth}" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel
+                Margin="{StaticResource AppTheme.Padding.LeftSmMd}"
+                VerticalAlignment="Center"
+                Orientation="Horizontal"
+                Spacing="{StaticResource AppTheme.Spacing.Xs}">
+                <Button Click="Close_Click" AutomationProperties.Name="Home" ToolTipService.ToolTip="Home — projects"
+                        Width="{StaticResource AppTheme.ComponentSize.ChromeButtonWidth}" Background="Transparent" BorderThickness="0" Padding="{StaticResource AppTheme.Padding.None}">
+                    <Image Width="{StaticResource AppTheme.IconSize.Standard}" Height="{StaticResource AppTheme.IconSize.Standard}" Source="ms-appx:///Assets/icons/home.svg" />
+                </Button>
+                <ToggleButton x:Name="MenuDisclosureButton" Click="MenuDisclosure_Click" IsChecked="False"
+                              Width="{StaticResource AppTheme.ComponentSize.KeyframeButtonSize}" MinWidth="0" Background="Transparent" BorderThickness="0"
+                              Padding="{StaticResource AppTheme.Padding.None}" AutomationProperties.Name="Show application menus"
+                              ToolTipService.ToolTip="Application menus (Alt or F10)">
+                    <shared:FluentIcon x:Name="MenuChevron" Width="{StaticResource AppTheme.IconSize.Xxs}" Height="{StaticResource AppTheme.IconSize.Xxs}" Icon="{x:Bind shared:Icons.ChevronRight}"
+                                       Fill="{StaticResource AppTheme.Text.Secondary}" RenderTransformOrigin="0.5,0.5">
+                        <shared:FluentIcon.RenderTransform><CompositeTransform x:Name="MenuChevronTransform" /></shared:FluentIcon.RenderTransform>
+                    </shared:FluentIcon>
+                </ToggleButton>
+                <Grid x:Name="MenuRevealHost" Width="{StaticResource AppTheme.BorderWidth.Thin}" SizeChanged="MenuRevealHost_SizeChanged">
+                    <Grid.Clip><RectangleGeometry x:Name="MenuRevealClip" /></Grid.Clip>
+                <MenuBar
+                    x:Name="EditorMenuBar" Padding="{StaticResource AppTheme.Padding.None}"
+                    Width="{StaticResource AppTheme.ComponentSize.MenuRevealWidth}"
+                    HorizontalAlignment="Left" Opacity="0" IsHitTestVisible="False"
+                    VerticalAlignment="Center"
+                    AutomationProperties.Name="Application menu">
+                    <MenuBar.RenderTransform><CompositeTransform x:Name="MenuRevealTransform" TranslateX="-8" /></MenuBar.RenderTransform>
+                    <MenuBarItem Width="{StaticResource AppTheme.ComponentSize.MenuItemWidth}" Margin="{StaticResource AppTheme.Padding.None}" Title="File" AccessKey="F">
+                        <MenuFlyoutItem Click="MenuNewProject_Click" Text="New Project…" KeyboardAcceleratorTextOverride="Ctrl+N" />
+                        <MenuFlyoutItem Click="MenuNewFolder_Click" Text="New Folder…" />
+                        <MenuFlyoutItem Click="MenuOpenProject_Click" Text="Open Project…" KeyboardAcceleratorTextOverride="Ctrl+O" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="Save_Click" Text="Save" KeyboardAcceleratorTextOverride="Ctrl+S" />
+                        <MenuFlyoutItem Click="SaveAs_Click" Text="Save As…" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="ImportMedia_Click" Text="Import Media…" KeyboardAcceleratorTextOverride="Ctrl+I" />
+                        <MenuFlyoutItem Click="Export_Click" Text="Export…" KeyboardAcceleratorTextOverride="Ctrl+M" />
+                        <MenuFlyoutItem Click="MenuShareStub_Click" Text="Share…" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="Reveal_Click" Text="Reveal Project in Explorer" />
+                        <MenuFlyoutItem Click="Close_Click" Text="Close Project" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="MenuSettings_Click" Text="Settings…" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="MenuQuit_Click" Text="Exit" />
+                    </MenuBarItem>
+                    <MenuBarItem Width="{StaticResource AppTheme.ComponentSize.MenuItemWidth}" Margin="{StaticResource AppTheme.Padding.None}" Title="Edit" AccessKey="E">
+                        <MenuFlyoutItem Click="MenuUndo_Click" Text="Undo" KeyboardAcceleratorTextOverride="Ctrl+Z" />
+                        <MenuFlyoutItem Click="MenuRedo_Click" Text="Redo" KeyboardAcceleratorTextOverride="Ctrl+Y" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="MenuSelectForwardTrack_Click" Text="Select Forward on Track" KeyboardAcceleratorTextOverride="A" />
+                        <MenuFlyoutItem Click="MenuSelectForwardAll_Click" Text="Select Forward on All Tracks" KeyboardAcceleratorTextOverride="Shift+A" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="MenuSplit_Click" Text="Split at Playhead" KeyboardAcceleratorTextOverride="B" />
+                        <MenuFlyoutItem Click="MenuAddMarker_Click" Text="Add Marker" KeyboardAcceleratorTextOverride="M" />
+                        <MenuFlyoutItem Click="MenuTrimStart_Click" Text="Trim Start to Playhead" KeyboardAcceleratorTextOverride="Q" />
+                        <MenuFlyoutItem Click="MenuTrimEnd_Click" Text="Trim End to Playhead" KeyboardAcceleratorTextOverride="W" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="MenuDelete_Click" Text="Delete" KeyboardAcceleratorTextOverride="Delete" />
+                        <MenuFlyoutItem Click="MenuRippleDelete_Click" Text="Ripple Delete" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="MenuLink_Click" Text="Link Selection" KeyboardAcceleratorTextOverride="Ctrl+L" />
+                        <MenuFlyoutItem Click="MenuUnlink_Click" Text="Unlink Selection" KeyboardAcceleratorTextOverride="Ctrl+Shift+L" />
+                        <MenuFlyoutItem Click="MenuRestoreLinkedAudio_Click" Text="Restore Linked Audio" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="MenuAddVideoTrack_Click" Text="Add Video Track" />
+                        <MenuFlyoutItem Click="MenuAddAudioTrack_Click" Text="Add Audio Track" />
+                        <MenuFlyoutSeparator />
+                        <RadioMenuFlyoutItem
+                            x:Name="MenuToolSelectItem"
+                            Click="MenuToolSelect_Click"
+                            GroupName="EditorToolMode"
+                            KeyboardAcceleratorTextOverride="V"
+                            Text="Select" />
+                        <RadioMenuFlyoutItem
+                            x:Name="MenuToolTrimItem"
+                            Click="MenuToolTrim_Click"
+                            GroupName="EditorToolMode"
+                            KeyboardAcceleratorTextOverride="2"
+                            Text="Trim" />
+                        <RadioMenuFlyoutItem
+                            x:Name="MenuToolBladeItem"
+                            Click="MenuToolBlade_Click"
+                            GroupName="EditorToolMode"
+                            KeyboardAcceleratorTextOverride="C"
+                            Text="Blade" />
+                    </MenuBarItem>
+                    <MenuBarItem Width="{StaticResource AppTheme.ComponentSize.MenuItemWidth}" Margin="{StaticResource AppTheme.Padding.None}" Title="View" AccessKey="V">
+                        <ToggleMenuFlyoutItem x:Name="MenuItemMediaPanel" Click="MenuToggleMedia_Click" Text="Media Panel" />
+                        <ToggleMenuFlyoutItem x:Name="MenuItemInspectorPanel" Click="MenuToggleInspector_Click" Text="Inspector" />
+                        <ToggleMenuFlyoutItem x:Name="MenuItemAgentPanel" Click="MenuToggleAgent_Click" Text="Agent" />
+                        <MenuFlyoutItem Click="MenuShowHiddenPanels_Click" Text="Show Hidden Panels" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="MenuMaximize_Click" Text="Maximize Focused Panel" KeyboardAcceleratorTextOverride="`" />
+                        <MenuFlyoutItem Click="MenuRestoreLayout_Click" Text="Restore Layout" KeyboardAcceleratorTextOverride="Esc" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="MenuLayoutDefault_Click" Text="Layout: Default" />
+                        <MenuFlyoutItem Click="MenuLayoutMedia_Click" Text="Layout: Media" />
+                        <MenuFlyoutItem Click="MenuLayoutVertical_Click" Text="Layout: Vertical" />
+                        <MenuFlyoutItem Click="MenuLayoutPreview_Click" Text="Layout: Preview" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="MenuFullScreen_Click" Text="Enter Full Screen" />
+                    </MenuBarItem>
+                    <MenuBarItem Width="{StaticResource AppTheme.ComponentSize.MenuItemWidth}" Margin="{StaticResource AppTheme.Padding.None}" Title="Help" AccessKey="H">
+                        <MenuFlyoutItem Click="MenuTutorial_Click" Text="Tutorial" />
+                        <MenuFlyoutItem Click="MenuShortcuts_Click" Text="Keyboard Shortcuts" />
+                        <MenuFlyoutItem Click="MenuMcpInstructions_Click" Text="MCP Instructions" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="MenuCheckUpdates_Click" Text="Check for Updates…" />
+                        <MenuFlyoutItem Click="MenuAbout_Click" Text="About Temno" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Click="MenuFeedback_Click" Text="Send Feedback…" />
+                    </MenuBarItem>
+                </MenuBar>
+                </Grid>
+
+                <!-- Hidden state holders for panel visibility -->
+                <ToggleButton
+                    x:Name="ToggleMedia"
+                    IsTabStop="False"
+                    Width="0"
+                    Height="0"
+                    Padding="{StaticResource AppTheme.Padding.None}"
+                    Opacity="0"
+                    IsHitTestVisible="False"
+                    IsChecked="True"
+                    Click="ToggleMedia_Click" />
+                <ToggleButton
+                    x:Name="ToggleInspector"
+                    IsTabStop="False"
+                    Width="0"
+                    Height="0"
+                    Padding="{StaticResource AppTheme.Padding.None}"
+                    Opacity="0"
+                    IsHitTestVisible="False"
+                    IsChecked="True"
+                    Click="ToggleInspector_Click" />
+            </StackPanel>
+
+            <Border x:Name="EditorDragRegion" Grid.Column="1" Background="Transparent" />
+            <TextBlock
+                x:Name="ProjectTitleText"
+                Grid.Column="1"
+                Margin="{StaticResource AppTheme.Padding.LeftLgXl}"
+                IsHitTestVisible="False"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                FontSize="{StaticResource AppTheme.FontSize.Md}"
+                FontWeight="SemiBold"
+                Foreground="{StaticResource AppTheme.Text.Primary}"
+                Text="Project"
+                TextTrimming="CharacterEllipsis" />
+            <!-- Kept for code that updates timeline summary into status -->
+            <TextBlock x:Name="TimelineSummaryText" Visibility="Collapsed" />
+
+            <!-- Mac TitleBarTrailingView: Update chip, then Export, left of captions. -->
+            <StackPanel
+                Grid.Column="2"
+                Margin="{StaticResource AppTheme.Padding.RightXs}"
+                VerticalAlignment="Center"
+                Orientation="Horizontal"
+                Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                <!-- Mac TitleBarLeadingView: agent bubble -->
+                <ToggleButton
+                    x:Name="ToggleAgent"
+                    Width="{StaticResource AppTheme.ComponentSize.AgentButtonWidth}"
+                    Height="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}"
+                    Padding="{StaticResource AppTheme.Padding.None}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    AutomationProperties.Name="Toggle agent panel"
+                    Click="ToggleAgent_Click"
+                    IsChecked="False"
+                    ToolTipService.ToolTip="Toggle agent panel">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xs}"><shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" x:Name="ToggleAgentIcon" Fill="{StaticResource AppTheme.Text.Secondary}" Icon="{x:Bind shared:Icons.Sparkle}" /><TextBlock Text="Agent" FontSize="{StaticResource AppTheme.FontSize.Md}" /></StackPanel>
+                </ToggleButton>
+                <Button
+                    x:Name="TitleBarUpdateButton"
+                    Height="{StaticResource AppTheme.IconSize.Lg}"
+                    MinWidth="0"
+                    Padding="{StaticResource AppTheme.Padding.HSmMd}"
+                    Margin="{StaticResource AppTheme.Padding.RightXs}"
+                    Background="{StaticResource AppTheme.Update.ChipFill}"
+                    BorderThickness="0"
+                    CornerRadius="{StaticResource AppTheme.CornerRadius.Capsule}"
+                    AutomationProperties.Name="Install update"
+                    Click="TitleBarUpdate_Click"
+                    ToolTipService.ToolTip="A newer build is available"
+                    Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Accent.Timecode}" Icon="{x:Bind shared:Icons.ArrowDownload}" />
+                        <TextBlock
+                            x:Name="TitleBarUpdateLabel"
+                            VerticalAlignment="Center"
+                            FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                            FontWeight="SemiBold"
+                            Foreground="{StaticResource AppTheme.Accent.Timecode}"
+                            Text="Update" />
+                    </StackPanel>
+                </Button>
+                <Button
+                    x:Name="ExportQueueButton"
+                    Padding="{StaticResource AppTheme.Padding.Control}"
+                    Style="{StaticResource AccentButtonStyle}"
+                    BorderThickness="1"
+                    AutomationProperties.Name="Export"
+                    Click="ExportQueueButton_Click"
+                    ToolTipService.ToolTip="Export queue (idle)">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.SmMd}">
+                        <Border
+                            x:Name="ExportQueueDot"
+                            Width="7"
+                            Height="7"
+                            VerticalAlignment="Center"
+                            Background="{StaticResource AppTheme.Text.Muted}"
+                            CornerRadius="{StaticResource AppTheme.CornerRadius.XsSm}" />
+                        <TextBlock
+                            x:Name="ExportQueueLabel"
+                            VerticalAlignment="Center"
+                            FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                            Foreground="{StaticResource AppTheme.Text.Secondary}"
+                            Text="Export" />
+                    </StackPanel>
+                </Button>
+                <Button
+                    x:Name="AccountButton"
+                    Width="28"
+                    Height="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}"
+                    Padding="{StaticResource AppTheme.Padding.None}"
+                    AutomationProperties.Name="Account"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="MenuAccount_Click"
+                    ToolTipService.ToolTip="Account">
+                    <shared:AccountAvatar x:Name="HeaderAccountAvatar" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Default Mac topology: Agent | (Media | Preview | Inspector) / Timeline -->
+        <Grid x:Name="ShellGrid" Grid.Row="1" Margin="{StaticResource AppTheme.Padding.TopXxs}">
+            <!-- WORKSPACE: MainStack | optional side Preview (Vertical preset) -->
+            <Grid x:Name="WorkspaceGrid">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="MainStackCol" Width="*" MinWidth="200" />
+                    <ColumnDefinition x:Name="SidePreviewSplitterCol" Width="0" />
+                    <ColumnDefinition x:Name="SidePreviewCol" Width="0" MinWidth="0" />
+                </Grid.ColumnDefinitions>
+
+                <Grid x:Name="MainStack" Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition x:Name="UpperRow" Height="*" MinHeight="80" />
+                    <RowDefinition x:Name="TimelineSplitterRow" Height="5" />
+                    <RowDefinition
+                        x:Name="TimelineRow"
+                        Height="220"
+                        MinHeight="0"
+                        MaxHeight="700" />
+                </Grid.RowDefinitions>
+
+                <!-- Upper: Media | Preview | Inspector -->
+                <Grid x:Name="UpperGrid">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition
+                            x:Name="MediaCol"
+                            Width="{StaticResource AppTheme.Grid.DefaultPanelWidth}"
+                            MinWidth="0" />
+                        <ColumnDefinition x:Name="MediaSplitterCol" Width="5" />
+                        <ColumnDefinition
+                            x:Name="PreviewCol"
+                            Width="*"
+                            MinWidth="0" />
+                        <ColumnDefinition x:Name="InspectorSplitterCol" Width="5" />
+                        <ColumnDefinition
+                            x:Name="InspectorCol"
+                            Width="{StaticResource AppTheme.Grid.DefaultPanelWidth}"
+                            MinWidth="0" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- MEDIA (WP-73/WP-131: Mac MediaPanelView rail + Media / Index / Captions / Audio) -->
+                    <Border
+                        x:Name="MediaPanel"
+                        Margin="{StaticResource AppTheme.Padding.None}"
+                        AllowDrop="True"
+                        shared:Motion.Fade="{StaticResource AppTheme.Anim.Transition}"
+                        Background="{StaticResource AppTheme.Background.Surface}"
+                        BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+                        BorderThickness="0"
+                        CornerRadius="{StaticResource AppTheme.CornerRadius.None}"
+                        DragOver="MediaPanel_DragOver"
+                        Drop="MediaPanel_Drop"
+                        Tag="Media">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="{StaticResource AppTheme.Grid.SourceTabsHeight}" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid Background="{StaticResource AppTheme.Background.Surface}"
+                                  BorderBrush="{StaticResource AppTheme.Border.Primary}" BorderThickness="0,0,0,1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <ToggleButton x:Name="RailMediaBtn" Grid.Column="0" HorizontalAlignment="Stretch"
+                                              Height="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="0" Margin="{StaticResource AppTheme.Padding.Xs}"
+                                              Padding="{StaticResource AppTheme.Padding.None}" IsChecked="True"
+                                              Tag="Media" Click="MediaRail_Click" AutomationProperties.Name="Media"
+                                              ToolTipService.ToolTip="Media" BorderThickness="0">
+                                    <Grid>
+                                        <Border x:Name="RailMediaIndicator" Visibility="Visible" Height="{StaticResource AppTheme.BorderWidth.Thick}"
+                                                VerticalAlignment="Bottom" Background="{StaticResource AppTheme.Accent.Brand}" />
+                                        <TextBlock Text="Media" FontSize="{StaticResource AppTheme.FontSize.Md}"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Center" />
+                                    </Grid>
+                                </ToggleButton>
+                                <ToggleButton x:Name="RailIndexBtn" Grid.Column="1" HorizontalAlignment="Stretch"
+                                              Height="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="0" Margin="{StaticResource AppTheme.Padding.Xs}"
+                                              Padding="{StaticResource AppTheme.Padding.None}" IsChecked="False"
+                                              Tag="Index" Click="MediaRail_Click" AutomationProperties.Name="Index"
+                                              ToolTipService.ToolTip="Index" BorderThickness="0">
+                                    <Grid>
+                                        <Border x:Name="RailIndexIndicator" Visibility="Collapsed" Height="{StaticResource AppTheme.BorderWidth.Thick}"
+                                                VerticalAlignment="Bottom" Background="{StaticResource AppTheme.Accent.Brand}" />
+                                        <TextBlock Text="Index" FontSize="{StaticResource AppTheme.FontSize.Md}"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Center" />
+                                    </Grid>
+                                </ToggleButton>
+                                <ToggleButton x:Name="RailCaptionsBtn" Grid.Column="2" HorizontalAlignment="Stretch"
+                                              Height="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="0" Margin="{StaticResource AppTheme.Padding.Xs}"
+                                              Padding="{StaticResource AppTheme.Padding.None}" IsChecked="False"
+                                              Tag="Captions" Click="MediaRail_Click" AutomationProperties.Name="Captions"
+                                              ToolTipService.ToolTip="Captions" BorderThickness="0">
+                                    <Grid>
+                                        <Border x:Name="RailCaptionsIndicator" Visibility="Collapsed" Height="{StaticResource AppTheme.BorderWidth.Thick}"
+                                                VerticalAlignment="Bottom" Background="{StaticResource AppTheme.Accent.Brand}" />
+                                        <TextBlock Text="Captions" FontSize="{StaticResource AppTheme.FontSize.Md}"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Center" />
+                                    </Grid>
+                                </ToggleButton>
+                                <ToggleButton x:Name="RailAudioBtn" Grid.Column="3" HorizontalAlignment="Stretch"
+                                              Height="{StaticResource AppTheme.ComponentSize.CompactButtonHeight}" MinHeight="0" Margin="{StaticResource AppTheme.Padding.Xs}"
+                                              Padding="{StaticResource AppTheme.Padding.None}" IsChecked="False"
+                                              Tag="Audio" Click="MediaRail_Click" AutomationProperties.Name="Audio"
+                                              ToolTipService.ToolTip="Audio" BorderThickness="0">
+                                    <Grid>
+                                        <Border x:Name="RailAudioIndicator" Visibility="Collapsed" Height="{StaticResource AppTheme.BorderWidth.Thick}"
+                                                VerticalAlignment="Bottom" Background="{StaticResource AppTheme.Accent.Brand}" />
+                                        <TextBlock Text="Audio" FontSize="{StaticResource AppTheme.FontSize.Md}"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Center" />
+                                    </Grid>
+                                </ToggleButton>
+                            </Grid>
+
+                            <!-- MEDIA TAB -->
+                            <Grid
+                                x:Name="MediaTabPane"
+                                Grid.Row="1"
+                                shared:Motion.Fade="{StaticResource AppTheme.Anim.Transition}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <!-- Mac MediaTab: Import row + search + Library context -->
+                            <Border Grid.Row="1"
+                                Height="{StaticResource Layout.PanelHeaderHeight}"
+                                Background="{StaticResource AppTheme.Background.Raised}"
+                                BorderBrush="{StaticResource AppTheme.Border.Primary}"
+                                BorderThickness="0,0,0,1"
+                                Padding="{StaticResource AppTheme.Padding.HSmMd}">
+                                <StackPanel
+                                    VerticalAlignment="Center"
+                                    Orientation="Horizontal"
+                                    Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                                    <Button
+                                        Padding="{StaticResource AppTheme.Padding.MdXxs}"
+                                        Click="ImportMedia_Click"
+                                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                        ToolTipService.ToolTip="Import video, image, or audio files">
+                                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                            <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.Add}" />
+                                            <TextBlock Text="Import" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        Click="LinkMedia_Click"
+                                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                        AutomationProperties.Name="Link media in place"
+                                        ToolTipService.ToolTip="Add media without copying it into the project. Faster and smaller, but the project is no longer self-contained: if the original moves, the asset goes offline.">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.Link}" />
+                                    </Button>
+                                    <Button
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        Click="NewFolder_Click"
+                                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                        AutomationProperties.Name="New folder"
+                                        ToolTipService.ToolTip="Create a folder in the current media location">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.FolderAdd}" />
+                                    </Button>
+                                    <Button
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        Click="CreateMatte_Click"
+                                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                        AutomationProperties.Name="Create matte"
+                                        ToolTipService.ToolTip="Create a solid-color PNG matte in the current folder">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.RectangleLandscapeFilled}" />
+                                    </Button>
+                                    <Button
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        Background="{StaticResource AppTheme.Background.Prominent}"
+                                        BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+                                        BorderThickness="1"
+                                        CornerRadius="{StaticResource AppTheme.CornerRadius.XsSm}"
+                                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                        Click="MediaGenerate_Click"
+                                        AutomationProperties.Name="Generate media"
+                                        ToolTipService.ToolTip="Open the generation panel">
+                                        <TextBlock Text="Generate" />
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                            <StackPanel
+                                Grid.Row="0"
+                                Padding="{StaticResource AppTheme.Padding.ChipDense}"
+                                Spacing="{StaticResource AppTheme.Spacing.Xs}">
+
+                                <!-- WP-399: files this project names outside its folder stay blocked until allowed -->
+                                <InfoBar
+                                    x:Name="ExternalMediaBar"
+                                    HorizontalAlignment="Stretch"
+                                    AutomationProperties.Name="Files outside this project"
+                                    Closed="ExternalMediaBar_Closed"
+                                    IsClosable="True"
+                                    IsOpen="False"
+                                    Severity="Warning"
+                                    Title="Files outside this project">
+                                    <InfoBar.ActionButton>
+                                        <Button
+                                            x:Name="ExternalMediaReviewBtn"
+                                            AutomationProperties.Name="Review files outside this project"
+                                            Click="ExternalMediaReview_Click"
+                                            Content="Review…"
+                                            ToolTipService.ToolTip="See which files this project names outside its folder, and allow them" />
+                                    </InfoBar.ActionButton>
+                                </InfoBar>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ScrollViewer
+                                        HorizontalScrollBarVisibility="Auto"
+                                        VerticalScrollBarVisibility="Disabled">
+                                        <StackPanel x:Name="MediaBreadcrumbBar" Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xs}" />
+                                    </ScrollViewer>
+                                    <TextBlock
+                                        x:Name="MediaSearchStatus"
+                                        Grid.Column="1"
+                                        Margin="{StaticResource AppTheme.Padding.LeftSmMd}"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center"
+                                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                        Text="0 items"
+                                        TextWrapping="NoWrap"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <Button
+                                        x:Name="MediaViewOptionsBtn"
+                                        Grid.Column="2"
+                                        Margin="{StaticResource AppTheme.Padding.LeftSmMd}"
+                                        Padding="{StaticResource AppTheme.Padding.SmXxs}"
+                                        AutomationProperties.Name="Media view options"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        ToolTipService.ToolTip="View mode and thumbnail size">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Icon="{x:Bind shared:Icons.Apps}"  Fill="{StaticResource AppTheme.Text.Primary}"/>
+                                        <Button.Flyout>
+                                            <MenuFlyout x:Name="MediaViewOptionsFlyout" Placement="BottomEdgeAlignedRight" ShouldConstrainToRootBounds="True">
+                                                <RadioMenuFlyoutItem x:Name="MediaModeFolders" Click="MediaViewMode_Click" GroupName="MediaViewMode" Tag="Folders" Text="Folders" />
+                                                <RadioMenuFlyoutItem x:Name="MediaModeList" Click="MediaViewMode_Click" GroupName="MediaViewMode" Tag="List" Text="List" />
+                                                <RadioMenuFlyoutItem x:Name="MediaModeFlat" Click="MediaViewMode_Click" GroupName="MediaViewMode" Tag="Flat" Text="Flat" />
+                                                <RadioMenuFlyoutItem x:Name="MediaModeGrouped" Click="MediaViewMode_Click" GroupName="MediaViewMode" Tag="Grouped" Text="Grouped by type" />
+                                                <MenuFlyoutSeparator />
+                                                <RadioMenuFlyoutItem x:Name="MediaSizeSmall" Click="MediaThumbSize_Click" GroupName="MediaThumbSize" Tag="Small" Text="Small" />
+                                                <RadioMenuFlyoutItem x:Name="MediaSizeMedium" Click="MediaThumbSize_Click" GroupName="MediaThumbSize" Tag="Medium" Text="Medium" />
+                                                <RadioMenuFlyoutItem x:Name="MediaSizeLarge" Click="MediaThumbSize_Click" GroupName="MediaThumbSize" Tag="Large" Text="Large" />
+                                                <RadioMenuFlyoutItem x:Name="MediaSizeXL" Click="MediaThumbSize_Click" GroupName="MediaThumbSize" Tag="ExtraLarge" Text="Extra large" />
+                                            </MenuFlyout>
+                                        </Button.Flyout>
+                                    </Button>
+                                </Grid>
+                                <AutoSuggestBox
+                                    x:Name="MediaSearchBox"
+                                    AutomationProperties.Name="Search media"
+                                    QuerySubmitted="MediaSearch_QuerySubmitted"
+                                    TextChanged="MediaSearch_TextChanged">
+                                    <AutoSuggestBox.QueryIcon>
+                                <PathIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" HorizontalAlignment="Center" VerticalAlignment="Center" Data="{x:Bind shared:Icons.SearchSmall}" />
+                                    </AutoSuggestBox.QueryIcon>
+                                </AutoSuggestBox>
+                            </StackPanel>
+                            <GridView
+                                x:Name="FolderGrid"
+                                Grid.Row="2"
+                                Margin="{StaticResource AppTheme.Padding.SmMdXxsTop}"
+                                Height="74"
+                                IsItemClickEnabled="True"
+                                ItemClick="FolderGrid_ItemClick"
+                                SelectionMode="None">
+                                <GridView.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <ItemsWrapGrid Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </GridView.ItemsPanel>
+                                <GridView.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:MediaFolderItem">
+                                        <Border
+                                            MinWidth="94"
+                                            Margin="{StaticResource AppTheme.Padding.RightSmBottomXs}"
+                                            Padding="{StaticResource AppTheme.Padding.SmMdSm}"
+                                            Background="{StaticResource AppTheme.Background.Raised}"
+                                            BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+                                            BorderThickness="1"
+                                            CornerRadius="{StaticResource AppTheme.CornerRadius.Sm}">
+                                            <Border.ContextFlyout>
+                                                <MenuFlyout ShouldConstrainToRootBounds="True" shared:WindowPopout.ConstrainContextMenu="True">
+                                                    <MenuFlyoutItem Click="FolderMove_Click" Text="Move to folder…" Tag="{x:Bind}" />
+                                                </MenuFlyout>
+                                            </Border.ContextFlyout>
+                                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                                                <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Muted}" Icon="{x:Bind shared:Icons.Folder}" />
+                                                <TextBlock MaxWidth="120" FontSize="{StaticResource AppTheme.FontSize.Sm}" Foreground="{StaticResource AppTheme.Text.Primary}" Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </GridView.ItemTemplate>
+                            </GridView>
+                            <ListView
+                                x:Name="MediaList"
+                                Grid.Row="3"
+                                Padding="{StaticResource AppTheme.Padding.Xs}"
+                                CanDragItems="True"
+                                DragItemsStarting="MediaList_DragItemsStarting"
+                                SelectionChanged="MediaList_SelectionChanged"
+                                DoubleTapped="MediaList_DoubleTapped"
+                                SelectionMode="Single">
+                                <ListView.GroupStyle>
+                                    <GroupStyle HidesIfEmpty="True">
+                                        <!-- Default ListViewHeaderItem is MinHeight 44 / FontSize 20 with a
+                                             type-name UIA label. Compact it so the title-cased Key is the
+                                             header, not 48 px of empty chrome above the first item. -->
+                                        <GroupStyle.HeaderContainerStyle>
+                                            <Style TargetType="ListViewHeaderItem">
+                                                <Setter Property="MinHeight" Value="0" />
+                                                <Setter Property="Padding" Value="{StaticResource AppTheme.Padding.None}" />
+                                                <Setter Property="Margin" Value="{StaticResource AppTheme.Padding.TopXxs}" />
+                                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                <Setter Property="Background" Value="Transparent" />
+                                            </Style>
+                                        </GroupStyle.HeaderContainerStyle>
+                                        <GroupStyle.HeaderTemplate>
+                                            <DataTemplate>
+                                                <!-- DataContext is MediaKindGroup (UIA 2026-09-01), not
+                                                     ICollectionViewGroup. Binding Key is the group title. -->
+                                                <TextBlock
+                                                    Margin="{StaticResource AppTheme.Padding.Xs}"
+                                                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                                                    FontWeight="SemiBold"
+                                                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                                                    Text="{Binding Key}" />
+                                            </DataTemplate>
+                                        </GroupStyle.HeaderTemplate>
+                                    </GroupStyle>
+                                </ListView.GroupStyle>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:MediaEntryItem">
+                                        <Grid Padding="{StaticResource AppTheme.Padding.Xs}" ColumnSpacing="{StaticResource AppTheme.Spacing.SmMd}">
+                                            <Grid.ContextFlyout>
+                                                <MenuFlyout ShouldConstrainToRootBounds="True" shared:WindowPopout.ConstrainContextMenu="True">
+                                                    <MenuFlyoutItem
+                                                        Click="MediaReveal_Click"
+                                                        Text="Reveal in Explorer"
+                                                        Tag="{x:Bind}" />
+                                                    <MenuFlyoutItem Click="MediaInsert_Click" Text="Add to timeline at playhead" Tag="{x:Bind}" />
+                                                    <MenuFlyoutSeparator />
+                                                    <MenuFlyoutItem
+                                                        Click="MediaRename_Click"
+                                                        Text="Rename…"
+                                                        Tag="{x:Bind}" />
+                                                    <MenuFlyoutItem
+                                                        Click="MediaRelink_Click"
+                                                        Text="Relink…"
+                                                        Tag="{x:Bind}" />
+                                                    <MenuFlyoutItem
+                                                        Click="MediaMove_Click"
+                                                        Text="Move to folder…"
+                                                        Tag="{x:Bind}" />
+                                                    <MenuFlyoutSeparator />
+                                                    <MenuFlyoutItem
+                                                        Click="MediaDelete_Click"
+                                                        Text="Remove from project"
+                                                        Tag="{x:Bind}" />
+                                                </MenuFlyout>
+                                            </Grid.ContextFlyout>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <!-- Thumbnail with a media-kind glyph behind it (glyph shows until/without a thumbnail). -->
+                                            <Border
+                                                Width="48"
+                                                Height="27"
+                                                Background="{StaticResource AppTheme.Background.Base}"
+                                                CornerRadius="{StaticResource AppTheme.CornerRadius.Xs}">
+                                                <Grid>
+                                                    <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" HorizontalAlignment="Center" VerticalAlignment="Center" Fill="{StaticResource AppTheme.Text.Muted}" Icon="{x:Bind TypeIcon}" />
+                                                    <Image
+                                                        Source="{x:Bind Thumbnail, Mode=OneWay}"
+                                                        Stretch="UniformToFill" />
+                                                </Grid>
+                                            </Border>
+                                            <StackPanel
+                                                Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                Spacing="{StaticResource AppTheme.Spacing.Hairline}">
+                                                <TextBlock
+                                                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                                                    Foreground="{StaticResource AppTheme.Text.Primary}"
+                                                    Text="{x:Bind Name}"
+                                                    TextTrimming="CharacterEllipsis" />
+                                                <TextBlock
+                                                    FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                                    Text="{x:Bind KindLabel}"
+                                                    TextTrimming="CharacterEllipsis"
+                                                    ToolTipService.ToolTip="{x:Bind KindLabel}" />
+                                            </StackPanel>
+                                            <TextBlock
+                                                Grid.Column="2"
+                                                VerticalAlignment="Center"
+                                                FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                                Text="{x:Bind DurationLabel}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                            <StackPanel
+                                x:Name="MediaEmpty"
+                                Grid.Row="3"
+                                MaxWidth="240"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Spacing="{StaticResource AppTheme.Spacing.MdLg}"
+                                Visibility="Collapsed">
+                                <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Display}" Height="{StaticResource AppTheme.IconSize.Display}" HorizontalAlignment="Center" Fill="{StaticResource AppTheme.Text.Muted}" Icon="{x:Bind shared:Icons.Document}" />
+                                <TextBlock
+                                    x:Name="MediaEmptyTitle"
+                                    HorizontalAlignment="Center"
+                                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                                    FontWeight="SemiBold"
+                                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                                    Text="No media yet"
+                                    TextAlignment="Center"
+                                    TextWrapping="WrapWholeWords" />
+                                <TextBlock
+                                    x:Name="MediaEmptyBody"
+                                    HorizontalAlignment="Center"
+                                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                    Text="Import video, image, or audio to use on the timeline."
+                                    TextAlignment="Center"
+                                    TextWrapping="WrapWholeWords" />
+                                <Button
+                                    x:Name="MediaEmptyAction"
+                                    HorizontalAlignment="Center"
+                                    AutomationProperties.Name="Import media"
+                                    Click="MediaEmptyAction_Click"
+                                    Content="Import"
+                                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                    ToolTipService.ToolTip="Import video, image, or audio files" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="4">
+                            <Border BorderBrush="{StaticResource AppTheme.Border.Primary}"
+                                    BorderThickness="0,1,0,0" Padding="{StaticResource AppTheme.Padding.R3Panel}">
+                                <StackPanel Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                                    <Grid>
+                                        <TextBlock Text="Timelines" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        <Button HorizontalAlignment="Right" Click="AddTimeline_Click"
+                                                AutomationProperties.Name="New timeline" ToolTipService.ToolTip="New timeline"
+                                                Background="Transparent" BorderThickness="0" Padding="{StaticResource AppTheme.Padding.Xs}">
+                                            <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}"
+                                                               Icon="{x:Bind shared:Icons.Add}" Fill="{StaticResource AppTheme.Text.Secondary}" />
+                                        </Button>
+                                    </Grid>
+                                    <ScrollViewer MaxHeight="{StaticResource AppTheme.ComponentSize.LibraryTimelinesMaxHeight}"
+                                                  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl x:Name="LibraryTimelinesList">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:TimelineTabItem">
+                                                    <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                                            Margin="{StaticResource AppTheme.Padding.TopXs}" Padding="{StaticResource AppTheme.Padding.Md}"
+                                                            Click="TimelineTab_Click" RightTapped="TimelineTab_RightTapped"
+                                                            Tag="{x:Bind Id}" AutomationProperties.Name="{x:Bind Name}">
+                                                        <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                                            <TextBlock Text="{x:Bind Name}" FontWeight="{x:Bind ActiveWeight}" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Text="{x:Bind Details}" FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                                                       Foreground="{StaticResource AppTheme.Text.Tertiary}" />
+                                                        </StackPanel>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+                            <controls:GenerationComposer x:Name="GenerationPanel" />
+                            </StackPanel>
+                            <InfoBar
+                                x:Name="MediaErrorBar"
+                                Grid.Row="0"
+                                Grid.RowSpan="4"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Top"
+                                IsClosable="True"
+                                IsOpen="False"
+                                Severity="Error"
+                                Title="Media library" />
+                            <Grid
+                                x:Name="MediaBusyOverlay"
+                                Grid.Row="0"
+                                Grid.RowSpan="4"
+                                Background="{StaticResource AppTheme.Background.OverlayScrim}"
+                                Visibility="Collapsed"
+                                AutomationProperties.Name="Media library busy"
+                                shared:Motion.Fade="{StaticResource AppTheme.Anim.Transition}">
+                                <StackPanel
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="{StaticResource AppTheme.Spacing.Md}">
+                                    <ProgressRing
+                                        x:Name="MediaBusyRing"
+                                        Width="{StaticResource AppTheme.ComponentSize.ChromeButtonWidth}"
+                                        Height="32"
+                                        IsActive="False" />
+                                    <TextBlock
+                                        x:Name="MediaBusyLabel"
+                                        HorizontalAlignment="Center"
+                                        FontSize="{StaticResource AppTheme.FontSize.Md}"
+                                        Foreground="{StaticResource AppTheme.Text.Primary}"
+                                        Text="Importing…" />
+                                    <Button
+                                        x:Name="MediaBusyStopBtn"
+                                        HorizontalAlignment="Center"
+                                        MinWidth="{StaticResource AppTheme.ComponentSize.AgentButtonWidth}"
+                                        AutomationProperties.Name="Stop media library work"
+                                        Click="MediaBusyStop_Click"
+                                        Content="Stop"
+                                        ToolTipService.ToolTip="Cancel this import or search" />
+                                </StackPanel>
+                            </Grid>
+                            </Grid>
+
+                            <!-- INDEX TAB (WP-131: Transcript | Markers) -->
+                            <Grid
+                                x:Name="IndexTabPane"
+                                Grid.Row="1"
+                                Visibility="Collapsed"
+                                shared:Motion.Fade="{StaticResource AppTheme.Anim.Transition}">
+                                <controls:TranscriptIndexControl
+                                    x:Name="TranscriptIndex"
+                                    OpenCaptionsRequested="TranscriptIndex_OpenCaptionsRequested"
+                                    SeekRequested="TranscriptIndex_SeekRequested"
+                                    TimelineEdited="TranscriptIndex_TimelineEdited" />
+                            </Grid>
+
+                            <!-- CAPTIONS TAB (WP-128: seven sections + pinned Generate footer) -->
+                            <Grid
+                                x:Name="CaptionsTabPane"
+                                Grid.Row="1"
+                                Visibility="Collapsed"
+                                shared:Motion.Fade="{StaticResource AppTheme.Anim.Transition}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid>
+                                    <ScrollViewer
+                                        x:Name="CaptionsFormScroll"
+                                        Padding="{StaticResource AppTheme.Padding.Lg}"
+                                        VerticalScrollBarVisibility="Auto">
+                                        <StackPanel
+                                            x:Name="CaptionsFormHost"
+                                            Spacing="{StaticResource AppTheme.Spacing.Md}" />
+                                    </ScrollViewer>
+                                    <Grid
+                                        x:Name="CaptionsBusyOverlay"
+                                        Background="{StaticResource AppTheme.Background.OverlayScrim}"
+                                        Visibility="Collapsed"
+                                        AutomationProperties.Name="Caption generation in progress"
+                                        shared:Motion.Fade="{StaticResource AppTheme.Anim.Transition}">
+                                        <StackPanel
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Spacing="{StaticResource AppTheme.Spacing.Md}"
+                                            AutomationProperties.Name="Caption generation in progress">
+                                            <ProgressRing
+                                                x:Name="CaptionsBusyRing"
+                                                Width="{StaticResource AppTheme.ComponentSize.ChromeButtonWidth}"
+                                                Height="32"
+                                                IsActive="False" />
+                                            <TextBlock
+                                                x:Name="CaptionsBusyLabel"
+                                                HorizontalAlignment="Center"
+                                                FontSize="{StaticResource AppTheme.FontSize.Md}"
+                                                Foreground="{StaticResource AppTheme.Text.Primary}"
+                                                Text="Transcribing…" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
+                                <Border
+                                    Grid.Row="1"
+                                    Background="{StaticResource AppTheme.Background.Raised}"
+                                    BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+                                    BorderThickness="0,1,0,0"
+                                    Padding="{StaticResource AppTheme.Padding.Md}">
+                                    <StackPanel Spacing="{StaticResource AppTheme.Spacing.Xs}">
+                                        <Grid ColumnSpacing="{StaticResource AppTheme.Spacing.SmMd}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button
+                                                x:Name="GenerateCaptionsBtn"
+                                                Style="{StaticResource AccentButtonStyle}"
+                                                HorizontalAlignment="Stretch"
+                                                AutomationProperties.Name="Generate Captions"
+                                                Click="GenerateCaptions_Click"
+                                                Content="Generate Captions"
+                                                ToolTipService.ToolTip="Transcribes on this PC with the built-in English model. Cloud spends hosted credits and currently admits English and Spanish." />
+                                            <DropDownButton
+                                                x:Name="CaptionAgentModeBtn"
+                                                Grid.Column="1"
+                                                AutomationProperties.Name="Agent Mode"
+                                                Content="Agent Mode"
+                                                FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                                FontWeight="SemiBold"
+                                                Background="{StaticResource AppTheme.Background.Base}"
+                                                BorderBrush="{StaticResource AppTheme.Ai.GradientBrush}"
+                                                CornerRadius="{StaticResource AppTheme.CornerRadius.Sm}"
+                                                Padding="{StaticResource AppTheme.Padding.MdLgXs}"
+                                                ToolTipService.ToolTip="Let Agent create captions for you. Choose a predefined task, or ask Agent in the chat." />
+                                            <Button
+                                                x:Name="StopCaptionsBtn"
+                                                Grid.Column="2"
+                                                MinWidth="{StaticResource AppTheme.ComponentSize.AgentButtonWidth}"
+                                                AutomationProperties.Name="Stop caption generation"
+                                                Click="StopCaptions_Click"
+                                                Content="Stop"
+                                                ToolTipService.ToolTip="Cancel in-flight caption generation"
+                                                Visibility="Collapsed" />
+                                        </Grid>
+                                        <Button x:Name="CaptionDefaultsButton" Click="CaptionDefaults_Click" Content="Style for new captions…"
+                                                HorizontalAlignment="Stretch" Background="Transparent" BorderThickness="0"
+                                                AutomationProperties.Name="Style for new captions" />
+                                        <TextBlock
+                                            x:Name="CaptionsStatusLabel"
+                                            FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                            Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                            TextWrapping="WrapWholeWords"
+                                            Text="" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- AUDIO TAB (Mac AudioPanelTab: Speech / Music) -->
+                            <Grid
+                                x:Name="AudioTabPane"
+                                Grid.Row="1"
+                                Visibility="Collapsed"
+                                shared:Motion.Fade="{StaticResource AppTheme.Anim.Transition}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <StackPanel
+                                    Orientation="Horizontal"
+                                    Padding="{StaticResource AppTheme.Padding.SmMdSm}"
+                                    Spacing="{StaticResource AppTheme.Spacing.Xs}"
+                                    Background="{StaticResource AppTheme.Background.Raised}">
+                                    <ToggleButton
+                                        x:Name="AudioSpeechBtn"
+                                        Padding="{StaticResource AppTheme.Padding.MdLgXs}"
+                                        Click="AudioSubTab_Click"
+                                        Content="Speech"
+                                        IsChecked="True"
+                                        Tag="Speech"
+                                        AutomationProperties.Name="Speech"
+                                        ToolTipService.ToolTip="Silence detection and remove-silence" />
+                                    <ToggleButton
+                                        x:Name="AudioMusicBtn"
+                                        Padding="{StaticResource AppTheme.Padding.MdLgXs}"
+                                        Click="AudioSubTab_Click"
+                                        Content="Music"
+                                        Tag="Music"
+                                        AutomationProperties.Name="Music"
+                                        ToolTipService.ToolTip="Generate music (needs a Temno API key in Settings → Generation)" />
+                                </StackPanel>
+                                <Grid Grid.Row="1">
+                                <ScrollViewer Padding="{StaticResource AppTheme.Padding.MdLgMd}">
+                                    <StackPanel>
+                                        <StackPanel x:Name="AudioSpeechPane" Spacing="{StaticResource AppTheme.Spacing.Md}">
+                                            <TextBlock FontWeight="SemiBold" Text="Speech" Foreground="{StaticResource AppTheme.Text.Primary}" />
+                                            <TextBlock
+                                                FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                                TextWrapping="WrapWholeWords"
+                                                Text="Energy-based silence detection. Mark Silence writes timeline markers at quiet ranges (capped). Remove Silence ripple-deletes dead air on the loudest track and its linked partners." />
+                                            <ToggleSwitch
+                                                x:Name="MarkSilenceSwitch"
+                                                Header="Mark Silence"
+                                                OffContent="Off"
+                                                OnContent="On"
+                                                Toggled="MarkSilence_Toggled"
+                                                AutomationProperties.Name="Mark Silence"
+                                                ToolTipService.ToolTip="Write timeline markers at quiet ranges (capped)" />
+                                            <StackPanel
+                                                x:Name="SilenceSettingsHost"
+                                                Spacing="{StaticResource AppTheme.Spacing.Xxs}" />
+                                            <Button
+                                                x:Name="RemoveSilenceBtn"
+                                                HorizontalAlignment="Stretch"
+                                                Click="RemoveSilence_Click"
+                                                Content="Remove Silence"
+                                                ToolTipService.ToolTip="Ripple-delete quiet, speech-free sections on the timeline (same engine as Agent remove_silence)" />
+                                            <TextBlock
+                                                x:Name="AudioSpeechStatus"
+                                                FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                                TextWrapping="WrapWholeWords"
+                                                Text="" />
+                                        </StackPanel>
+                                        <StackPanel x:Name="AudioMusicPane" Spacing="{StaticResource AppTheme.Spacing.Md}" Visibility="Collapsed">
+                                            <TextBlock FontWeight="SemiBold" Text="Music" Foreground="{StaticResource AppTheme.Text.Primary}" />
+                                            <TextBlock
+                                                FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                                TextWrapping="WrapWholeWords"
+                                                Text="Generate music from a prompt. Needs a Temno API key in Settings → Generation. Demo generation is labelled and is not production audio." />
+                                            <Button
+                                                HorizontalAlignment="Stretch"
+                                                Click="MusicGenerate_Click"
+                                                Content="Generate music"
+                                                ToolTipService.ToolTip="Generate audio (needs a Temno API key in Settings → Generation)" />
+                                            <TextBlock
+                                                x:Name="AudioMusicStatus"
+                                                FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                                Text="" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </ScrollViewer>
+                                <Grid
+                                    x:Name="AudioEmpty"
+                                    Padding="{StaticResource AppTheme.Padding.Lg}"
+                                    Background="{StaticResource AppTheme.Background.Surface}"
+                                    Visibility="Collapsed">
+                                    <StackPanel
+                                        MaxWidth="240"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Spacing="{StaticResource AppTheme.Spacing.MdLg}">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Display}" Height="{StaticResource AppTheme.IconSize.Display}" HorizontalAlignment="Center" Fill="{StaticResource AppTheme.Text.Muted}" Icon="{x:Bind shared:Icons.MusicNote2}" />
+                                        <TextBlock
+                                            FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                                            FontWeight="SemiBold"
+                                            Foreground="{StaticResource AppTheme.Text.Secondary}"
+                                            Text="No clip on the timeline"
+                                            TextAlignment="Center"
+                                            TextWrapping="WrapWholeWords" />
+                                        <TextBlock
+                                            FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                                            Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                            Text="Silence and music tools need a video or audio clip."
+                                            TextAlignment="Center"
+                                            TextWrapping="WrapWholeWords" />
+                                        <Button
+                                            HorizontalAlignment="Center"
+                                            AutomationProperties.Name="Import media for audio tools"
+                                            Click="AudioEmptyImport_Click"
+                                            Content="Import"
+                                            FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                            ToolTipService.ToolTip="Import video, image, or audio files" />
+                                    </StackPanel>
+                                </Grid>
+                                <InfoBar
+                                    x:Name="AudioErrorBar"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Top"
+                                    IsClosable="True"
+                                    IsOpen="False"
+                                    Severity="Error"
+                                    Title="Audio" />
+                                <Grid
+                                    x:Name="AudioBusyOverlay"
+                                    Background="{StaticResource AppTheme.Background.OverlayScrim}"
+                                    Visibility="Collapsed"
+                                    AutomationProperties.Name="Audio work in progress"
+                                    shared:Motion.Fade="{StaticResource AppTheme.Anim.Transition}">
+                                    <StackPanel
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Spacing="{StaticResource AppTheme.Spacing.Md}">
+                                        <ProgressRing
+                                            x:Name="AudioBusyRing"
+                                            Width="{StaticResource AppTheme.ComponentSize.ChromeButtonWidth}"
+                                            Height="32"
+                                            IsActive="False" />
+                                        <TextBlock
+                                            x:Name="AudioBusyLabel"
+                                            HorizontalAlignment="Center"
+                                            FontSize="{StaticResource AppTheme.FontSize.Md}"
+                                            Foreground="{StaticResource AppTheme.Text.Primary}"
+                                            Text="Scanning…" />
+                                        <Button
+                                            x:Name="AudioBusyStopBtn"
+                                            HorizontalAlignment="Center"
+                                            MinWidth="{StaticResource AppTheme.ComponentSize.AgentButtonWidth}"
+                                            AutomationProperties.Name="Stop audio work"
+                                            Click="AudioBusyStop_Click"
+                                            Content="Stop"
+                                            ToolTipService.ToolTip="Cancel this audio operation" />
+                                    </StackPanel>
+                                </Grid>
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <controls:GridResizeThumb
+                        x:Name="MediaSplitter"
+                        Grid.Column="1"
+                        MinSize="200"
+                        MaxSize="700"
+                        Orientation="Vertical" />
+
+                    <!-- PREVIEW (Grid.Column required — WP-71 fix; may reparent to side column for Vertical) -->
+                    <Border
+                        x:Name="PreviewPanel"
+                        Grid.Column="2"
+                        Margin="{StaticResource AppTheme.Padding.None}"
+                        Background="{StaticResource AppTheme.Background.Surface}"
+                        BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+                        BorderThickness="0"
+                        CornerRadius="{StaticResource AppTheme.CornerRadius.None}"
+                        Tag="Preview">
+                        <controls:PreviewHostControl
+                            x:Name="Preview"
+                            PlayheadChanged="Preview_PlayheadChanged"
+                            ProjectSettingsChanged="Inspector_ProjectSettingsChanged" />
+                    </Border>
+
+                    <controls:GridResizeThumb
+                        x:Name="InspectorSplitter"
+                        Grid.Column="3"
+                        MinSize="150"
+                        MaxSize="480"
+                        Invert="True"
+                        Orientation="Vertical" />
+
+                    <!-- INSPECTOR -->
+                    <Border
+                        x:Name="InspectorPanel"
+                        Grid.Column="4"
+                        shared:Motion.Fade="{StaticResource AppTheme.Anim.Transition}"
+                        Margin="{StaticResource AppTheme.Padding.None}"
+                        Background="{StaticResource AppTheme.Background.Surface}"
+                        BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+                        BorderThickness="0"
+                        CornerRadius="{StaticResource AppTheme.CornerRadius.None}"
+                        Tag="Inspector">
+                        <controls:InspectorControl
+                            x:Name="Inspector"
+                            ClipEdited="Inspector_ClipEdited"
+                            ClipPreviewing="Inspector_ClipPreviewing"
+                            MediaLibraryChanged="Inspector_MediaLibraryChanged"
+                            ProjectSettingsChanged="Inspector_ProjectSettingsChanged"
+                            SeekPlayheadRequested="Inspector_SeekPlayheadRequested" />
+                    </Border>
+            <!-- AGENT -->
+            <Border
+                x:Name="AgentPanel"
+                Grid.Column="4"
+                Margin="{StaticResource AppTheme.Padding.None}"
+                Background="{StaticResource AppTheme.Background.Surface}"
+                BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+                shared:Motion.Fade="{StaticResource AppTheme.Anim.Transition}"
+                BorderThickness="0"
+                CornerRadius="{StaticResource AppTheme.CornerRadius.None}"
+                Tag="Agent">
+                <controls:AgentPanelControl
+                    x:Name="Agent"
+                    OpenSettingsRequested="Agent_OpenSettingsRequested"
+                    OpenAccountRequested="Agent_OpenAccountRequested"
+                    CloseRequested="Agent_CloseRequested"
+                    ToolsMutated="Agent_ToolsMutated" />
+            </Border>
+
+            <controls:GridResizeThumb
+                x:Name="AgentSplitter"
+                Grid.Column="3"
+                MinSize="240"
+                MaxSize="640"
+                Invert="True" Orientation="Vertical" />
+
+                </Grid>
+
+                <controls:GridResizeThumb
+                    x:Name="TimelineSplitter"
+                    Grid.Row="1"
+                    MinSize="100"
+                    MaxSize="700"
+                    Invert="True"
+                    Orientation="Horizontal" />
+
+                <!-- TIMELINE — Mac stack: tabs (28) → toolbar (38) → lanes | meter -->
+                <Border
+                    x:Name="TimelinePanel"
+                    Grid.Row="2"
+                    Margin="{StaticResource AppTheme.Padding.None}"
+                    Background="{StaticResource AppTheme.Background.Surface}"
+                    BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+                    BorderThickness="0"
+                    CornerRadius="{StaticResource AppTheme.CornerRadius.None}"
+                    Tag="Timeline">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="{StaticResource AppTheme.Grid.HeaderHeight}" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid x:Name="TimelineToolbar" SizeChanged="TimelineToolbar_SizeChanged">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition x:Name="TimelineTabsColumn" Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" x:Name="TimelineTabsHost"
+                            Background="{StaticResource AppTheme.Background.Raised}"
+                            BorderBrush="{StaticResource AppTheme.Border.Primary}"
+                            BorderThickness="0,0,0,1"
+                            Padding="{StaticResource AppTheme.Padding.HSmMd}">
+                            <StackPanel
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal"
+                                Spacing="{StaticResource AppTheme.Spacing.Xs}">
+                                <ScrollViewer
+                                    x:Name="TimelineTabsScroll"
+                                    HorizontalScrollMode="Enabled"
+                                    HorizontalScrollBarVisibility="Hidden"
+                                    VerticalScrollBarVisibility="Disabled"
+                                    PointerWheelChanged="TimelineTabsScroll_PointerWheelChanged">
+                                    <ItemsControl x:Name="TimelineTabsList" SizeChanged="TimelineTabsList_SizeChanged">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Xxs}" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:TimelineTabItem">
+                                                <Border
+                                                    Background="{x:Bind ActiveBackground}"
+                                                    CornerRadius="{StaticResource AppTheme.CornerRadius.XsSm}"
+                                                    Opacity="{x:Bind ActiveOpacity}"
+                                                    RightTapped="TimelineTab_RightTapped"
+                                                    Tag="{x:Bind Id}">
+                                                    <Grid>
+                                                        <StackPanel
+                                                            Padding="{StaticResource AppTheme.Padding.SmXxsRightXs}"
+                                                            Orientation="Horizontal"
+                                                            Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                                            <Button
+                                                                MinWidth="0"
+                                                                MinHeight="0"
+                                                                Padding="{StaticResource AppTheme.Padding.HXs}"
+                                                                Background="Transparent"
+                                                                BorderThickness="0"
+                                                                Click="TimelineTab_Click"
+                                                                DoubleTapped="TimelineTab_DoubleTapped"
+                                                                Tag="{x:Bind Id}"
+                                                                ToolTipService.ToolTip="{x:Bind TabToolTip}">
+                                                                <TextBlock
+                                                                    MaxWidth="156"
+                                                                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                                                                    FontWeight="{x:Bind ActiveWeight}"
+                                                                    Foreground="{x:Bind ActiveForeground}"
+                                                                    Text="{x:Bind Name}"
+                                                                    TextTrimming="CharacterEllipsis" />
+                                                            </Button>
+                                                            <Button
+                                                                Width="18"
+                                                                Height="18"
+                                                                MinWidth="0"
+                                                                MinHeight="0"
+                                                                Padding="{StaticResource AppTheme.Padding.None}"
+                                                                Background="Transparent"
+                                                                BorderThickness="0"
+                                                                Click="TimelineTabClose_Click"
+                                                                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                                                Tag="{x:Bind Id}"
+                                                                AutomationProperties.Name="{x:Bind CloseAutomationName}"
+                                                                ToolTipService.ToolTip="Close tab"
+                                                                Visibility="{x:Bind CloseVisibility}">
+                                                                <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Tertiary}" Icon="{x:Bind shared:Icons.Dismiss}" />
+                                                            </Button>
+                                                        </StackPanel>
+                                                        <Border
+                                                            Height="2"
+                                                            VerticalAlignment="Bottom"
+                                                            Background="{StaticResource AppTheme.Accent.Brand}"
+                                                            CornerRadius="{StaticResource AppTheme.CornerRadius.Hairline}"
+                                                            IsHitTestVisible="False"
+                                                            Visibility="{x:Bind ActiveIndicatorVisibility}" />
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                                <Button
+                                    x:Name="AddTimelineButton"
+                                    MinWidth="28"
+                                    Padding="{StaticResource AppTheme.Padding.SmXxs}"
+                                    Click="AddTimeline_Click"
+                                    AutomationProperties.Name="Add timeline"
+                                    ToolTipService.ToolTip="Add timeline">
+                                    <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.Add}" />
+                                </Button>
+                                <Button
+                                    x:Name="TimelineAllTabsButton"
+                                    MinWidth="28"
+                                    Padding="{StaticResource AppTheme.Padding.SmXxs}"
+                                    Click="TimelineAllTabs_Click"
+                                    AutomationProperties.Name="All timelines"
+                                    ToolTipService.ToolTip="All timelines"
+                                    Visibility="Collapsed">
+                                    <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Secondary}" Icon="{x:Bind shared:Icons.ChevronDown}" />
+                                </Button>
+                                <Border
+                                    Width="1"
+                                    Height="16"
+                                    Margin="{StaticResource AppTheme.Padding.HXs}"
+                                    Background="{StaticResource AppTheme.Border.Subtle}" />
+                            </StackPanel>
+                        </Border>                        <Border
+                            Grid.Column="1"
+                            Background="{StaticResource AppTheme.Background.Raised}"
+                            BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+                            BorderThickness="0,0,0,1"
+                            Padding="{StaticResource AppTheme.Padding.HSmMd}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel
+                                    VerticalAlignment="Center"
+                                    Orientation="Horizontal"
+                                    Spacing="{StaticResource AppTheme.Spacing.Xxs}">
+                                    <Button
+                                        MinWidth="{StaticResource AppTheme.ComponentSize.ChromeButtonWidth}"
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        Click="MenuUndo_Click"
+                                        AutomationProperties.Name="Undo"
+                                        ToolTipService.ToolTip="Undo (Ctrl+Z)">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.ArrowUndo}" />
+                                    </Button>
+                                    <Button
+                                        MinWidth="{StaticResource AppTheme.ComponentSize.ChromeButtonWidth}"
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        Click="MenuRedo_Click"
+                                        AutomationProperties.Name="Redo"
+                                        ToolTipService.ToolTip="Redo (Ctrl+Y)">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.ArrowRedo}" />
+                                    </Button>
+                                    <Border
+                                        Width="1"
+                                        Height="16"
+                                        Margin="{StaticResource AppTheme.Padding.HXs}"
+                                        Background="{StaticResource AppTheme.Border.Subtle}" />
+                                    <ToggleButton
+                                        x:Name="ToolSelect"
+                                        MinWidth="{StaticResource AppTheme.ComponentSize.ChromeButtonWidth}"
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        Click="ToolSelect_Click"
+                                        IsChecked="True"
+                                        AutomationProperties.Name="Select tool"
+                                        ToolTipService.ToolTip="Select tool (V)">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.Cursor}" />
+                                    </ToggleButton>
+                                    <ToggleButton
+                                        x:Name="ToolTrim"
+                                        MinWidth="{StaticResource AppTheme.ComponentSize.ChromeButtonWidth}"
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        Click="ToolTrim_Click"
+                                        AutomationProperties.Name="Trim tool"
+                                        ToolTipService.ToolTip="Trim tool (2)">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.ArrowBidirectionalLeftRight}" />
+                                    </ToggleButton>
+                                    <ToggleButton
+                                        x:Name="ToolBlade"
+                                        MinWidth="{StaticResource AppTheme.ComponentSize.ChromeButtonWidth}"
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        Click="ToolBlade_Click"
+                                        AutomationProperties.Name="Blade tool"
+                                        ToolTipService.ToolTip="Blade tool (C or 3)">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.Cut}" />
+                                    </ToggleButton>
+                                    <Button
+                                        MinWidth="{StaticResource AppTheme.ComponentSize.ChromeButtonWidth}"
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        Click="MenuSplit_Click"
+                                        AutomationProperties.Name="Split at playhead"
+                                        ToolTipService.ToolTip="Split at playhead (B)">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.SplitVertical}" />
+                                    </Button>
+                                    <Border x:Name="TimelineModesDivider"
+                                        Width="1"
+                                        Height="16"
+                                        Margin="{StaticResource AppTheme.Padding.HXs}"
+                                        Background="{StaticResource AppTheme.Border.Subtle}" />
+                                    <ToggleButton
+                                        x:Name="ToolRipple"
+                                        MinWidth="64"
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        Click="ToolRipple_Click"
+                                        Content="Ripple"
+                                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                        IsChecked="True"
+                                        AutomationProperties.Name="Ripple delete"
+                                        ToolTipService.ToolTip="Ripple: drop inserts (pushes later clips); delete closes gaps" />
+                                    <ToggleButton
+                                        x:Name="ToolOverwrite"
+                                        MinWidth="64"
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        Click="ToolOverwrite_Click"
+                                        Content="Overwrite"
+                                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                        AutomationProperties.Name="Overwrite on move"
+                                        ToolTipService.ToolTip="Overwrite on move" />
+                                    <ToggleButton
+                                        x:Name="ToolSnap"
+                                        MinWidth="64"
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        Click="ToolSnap_Click"
+                                        Content="Snap"
+                                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                        IsChecked="True"
+                                        AutomationProperties.Name="Snap"
+                                        ToolTipService.ToolTip="Snap to clips and playhead" />
+                                    <Button
+                                        MinWidth="64"
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        x:Name="ToolFit" Click="ToolFit_Click"
+                                        Content="Fit"
+                                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                                        AutomationProperties.Name="Fit timeline"
+                                        ToolTipService.ToolTip="Fit timeline to window" />
+                                    <Border x:Name="TimelineTextDivider"
+                                        Width="1"
+                                        Height="16"
+                                        Margin="{StaticResource AppTheme.Padding.HXs}"
+                                        Background="{StaticResource AppTheme.Border.Subtle}" />
+                                    <Button
+                                        MinWidth="{StaticResource AppTheme.ComponentSize.ChromeButtonWidth}"
+                                        Padding="{StaticResource AppTheme.Padding.SmXs}"
+                                        x:Name="ToolAddText" Click="AddText_Click"
+                                        AutomationProperties.Name="Add text"
+                                        ToolTipService.ToolTip="Add text at playhead">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Primary}" Icon="{x:Bind shared:Icons.Text}" />
+                                    </Button>
+                                    <Button x:Name="ToolOverflowButton" Click="ToolOverflow_Click" Visibility="Collapsed"
+                                            MinWidth="{StaticResource AppTheme.ComponentSize.ChromeButtonWidth}"
+                                            AutomationProperties.Name="More timeline tools" ToolTipService.ToolTip="More timeline tools"
+                                            Padding="{StaticResource AppTheme.Padding.SmXs}">
+                                        <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}"
+                                                           Icon="{x:Bind shared:Icons.MoreHorizontal}" Fill="{StaticResource AppTheme.Text.Primary}" />
+                                    </Button>
+                                </StackPanel>
+                                <StackPanel
+                                    x:Name="TimelineZoomCluster"
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    Orientation="Horizontal"
+                                    Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                                    <shared:FluentIcon Width="{StaticResource AppTheme.IconSize.Xs}" Height="{StaticResource AppTheme.IconSize.Xs}" Fill="{StaticResource AppTheme.Text.Muted}" Icon="{x:Bind shared:Icons.Search}" />
+                                    <Slider
+                                        x:Name="TimelineZoomSlider"
+                                        Width="100"
+                                        VerticalAlignment="Center"
+                                        AutomationProperties.Name="Timeline zoom"
+                                        ToolTipService.ToolTip="Timeline zoom — the readout shows how much time fits in view"
+                                        ValueChanged="TimelineZoomSlider_ValueChanged" />
+                                    <TextBlock
+                                        x:Name="TimelineZoomValue"
+                                        MinWidth="{StaticResource AppTheme.ComponentSize.AgentButtonWidth}"
+                                        VerticalAlignment="Center"
+                                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                                        Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                                        Text="" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        </Grid>
+                        <!-- Row 3: tracks | full-height meter (Mac AudioMeterView 32px) -->
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="{StaticResource AppTheme.Grid.ChromeButtonWidth}" />
+                            </Grid.ColumnDefinitions>
+                            <controls:TimelineControl
+                                x:Name="Timeline"
+                                PlayheadChanged="Timeline_PlayheadChanged"
+                                ScrubStarted="Timeline_ScrubStarted"
+                                ScrubEnded="Timeline_ScrubEnded"
+                                SelectionChanged="Timeline_SelectionChanged"
+                                TimelineEdited="Timeline_TimelineEdited"
+                                ContextActionRequested="Timeline_ContextActionRequested"
+                                ZoomChanged="Timeline_ZoomChanged"
+                                EmptyImportRequested="Timeline_EmptyImportRequested" />
+                            <Border
+                                Grid.Column="1"
+                                Background="{StaticResource AppTheme.Background.Base}"
+                                BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+                                BorderThickness="1,0,0,0"
+                                ToolTipService.ToolTip="Audio levels (source peaks at playhead)">
+                                <Grid Padding="{StaticResource AppTheme.Padding.XsSmMd}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border
+                                        Margin="{StaticResource AppTheme.Padding.HHairline}"
+                                        Background="{StaticResource AppTheme.Background.Raised}"
+                                        CornerRadius="{StaticResource AppTheme.CornerRadius.Hairline}">
+                                        <Rectangle
+                                            x:Name="MeterLeft"
+                                            Height="0"
+                                            VerticalAlignment="Bottom"
+                                            Fill="{StaticResource AppTheme.Status.Success}" />
+                                    </Border>
+                                    <Border
+                                        Grid.Column="1"
+                                        Margin="{StaticResource AppTheme.Padding.HHairline}"
+                                        Background="{StaticResource AppTheme.Background.Raised}"
+                                        CornerRadius="{StaticResource AppTheme.CornerRadius.Hairline}">
+                                        <Rectangle
+                                            x:Name="MeterRight"
+                                            Height="0"
+                                            VerticalAlignment="Bottom"
+                                            Fill="{StaticResource AppTheme.Status.Success}" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Border>
+                </Grid>
+
+                <controls:GridResizeThumb
+                    x:Name="SidePreviewSplitter"
+                    Grid.Column="1"
+                    MinSize="200"
+                    MaxSize="2000"
+                    Invert="True"
+                    Orientation="Vertical"
+                    Visibility="Collapsed" />
+            </Grid>
+        </Grid>
+
+        <!-- Compact status (Mac has none; keep single-line for Windows diagnostics) -->
+        <Border
+            Grid.Row="2"
+            Padding="{StaticResource AppTheme.Padding.MdXxs}"
+            Background="{StaticResource AppTheme.Background.Base}"
+            BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+            BorderThickness="0,1,0,0">
+            <Grid>
+                <TextBlock
+                    x:Name="StatusText"
+                    FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="" />
+                <TextBlock
+                    x:Name="PathText"
+                    HorizontalAlignment="Right"
+                    FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Opacity="0.7"
+                    TextTrimming="CharacterEllipsis" />
+            </Grid>
+        </Border>
+    </Grid>
+</Page>

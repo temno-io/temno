@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Temno.App.Controls.SkillsControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:shared="using:Temno.App.Controls.Shared"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!--  WP-309: Settings > Skills. The list, then one skill (or a new one, or an import) in place of it:
+          the Settings dialog cannot open a second dialog.  -->
+    <Grid>
+        <StackPanel x:Name="ListPane" Spacing="{StaticResource AppTheme.Spacing.Md}">
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.Xl}"
+                FontWeight="SemiBold"
+                Foreground="{StaticResource AppTheme.Text.Primary}"
+                Text="Skills" />
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                Text="Playbooks the assistant follows when a task matches, in chat and in connected agents. A skill is instructions only: it cannot run code, unlock tools or approve spending."
+                TextWrapping="WrapWholeWords" />
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.SmMd}">
+                <Button
+                    Padding="{StaticResource AppTheme.Padding.Control}"
+                    Click="New_Click"
+                    Content="New skill"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    AutomationProperties.Name="New skill"
+                    ToolTipService.ToolTip="Write a skill, starting from a template" />
+                <DropDownButton
+                    x:Name="ImportSkillButton"
+                    Padding="{StaticResource AppTheme.Padding.Control}"
+                    Content="Import"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    AutomationProperties.Name="Import a skill"
+                    ToolTipService.ToolTip="Add a skill made for Temno, Claude Code, Codex or Cursor. You read it before it is added.">
+                    <DropDownButton.Flyout>
+                        <MenuFlyout x:Name="ImportSkillFlyout" Placement="BottomEdgeAlignedLeft" ShouldConstrainToRootBounds="True">
+                            <MenuFlyoutItem
+                                Click="ImportFolder_Click"
+                                Text="Skill folder…"
+                                AutomationProperties.Name="Import a skill folder"
+                                ToolTipService.ToolTip="A folder holding SKILL.md" />
+                            <MenuFlyoutItem
+                                Click="ImportZip_Click"
+                                Text=".zip file…"
+                                AutomationProperties.Name="Import a skill .zip file"
+                                ToolTipService.ToolTip="A .zip holding one skill" />
+                        </MenuFlyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+                <Button
+                    Padding="{StaticResource AppTheme.Padding.Control}"
+                    Click="OpenFolder_Click"
+                    Content="Open folder"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    AutomationProperties.Name="Open the skills folder"
+                    ToolTipService.ToolTip="Your skills live in .temno\skills in your user folder" />
+            </StackPanel>
+            <InfoBar
+                x:Name="ListError"
+                HorizontalAlignment="Stretch"
+                IsClosable="True"
+                IsOpen="False"
+                Severity="Error"
+                Title="Skills" />
+            <StackPanel x:Name="Rows" Spacing="{StaticResource AppTheme.Spacing.Sm}" />
+            <StackPanel
+                x:Name="EmptyState"
+                Padding="{StaticResource AppTheme.Padding.Lg}"
+                HorizontalAlignment="Center"
+                Spacing="{StaticResource AppTheme.Spacing.MdLg}"
+                Visibility="Collapsed">
+                <shared:FluentIcon
+                    Width="{StaticResource AppTheme.IconSize.Display}"
+                    Height="{StaticResource AppTheme.IconSize.Display}"
+                    HorizontalAlignment="Center"
+                    Fill="{StaticResource AppTheme.Text.Muted}"
+                    Icon="{x:Bind shared:Icons.DocumentText}" />
+                <TextBlock
+                    FontSize="{StaticResource AppTheme.FontSize.MdLg}"
+                    FontWeight="SemiBold"
+                    Foreground="{StaticResource AppTheme.Text.Primary}"
+                    Text="No skills yet"
+                    TextAlignment="Center"
+                    TextWrapping="WrapWholeWords" />
+                <TextBlock
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="Write the steps for a task you repeat, or import a skill made for another agent."
+                    TextAlignment="Center"
+                    TextWrapping="WrapWholeWords" />
+                <Button
+                    HorizontalAlignment="Center"
+                    Padding="{StaticResource AppTheme.Padding.Control}"
+                    Click="New_Click"
+                    Content="New skill"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    Style="{StaticResource AccentButtonStyle}"
+                    AutomationProperties.Name="Write your first skill"
+                    ToolTipService.ToolTip="Write a skill, starting from a template" />
+            </StackPanel>
+            <TextBlock
+                FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                Text="Skill changes apply as you make them."
+                TextWrapping="WrapWholeWords" />
+        </StackPanel>
+
+        <StackPanel
+            x:Name="DetailPane"
+            Spacing="{StaticResource AppTheme.Spacing.Md}"
+            Visibility="Collapsed">
+            <Grid ColumnSpacing="{StaticResource AppTheme.Spacing.SmMd}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button
+                    x:Name="BackButton"
+                    Padding="{StaticResource AppTheme.Padding.Control}"
+                    Click="Back_Click"
+                    Content="Back"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    AutomationProperties.Name="Back to skills"
+                    ToolTipService.ToolTip="Back to the list of skills" />
+                <TextBlock
+                    x:Name="DetailTitle"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    FontSize="{StaticResource AppTheme.FontSize.Lg}"
+                    FontWeight="SemiBold"
+                    Foreground="{StaticResource AppTheme.Text.Primary}"
+                    TextTrimming="CharacterEllipsis" />
+                <TextBlock
+                    x:Name="DetailState"
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}" />
+            </Grid>
+            <TextBlock
+                x:Name="DetailSource"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                Foreground="{StaticResource AppTheme.Text.Secondary}"
+                IsTextSelectionEnabled="True"
+                TextWrapping="WrapWholeWords" />
+            <!--  The actions sit above the text, so Turn on and Save are in view at any dialog height.  -->
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.SmMd}">
+                <Button
+                    x:Name="SaveButton"
+                    Padding="{StaticResource AppTheme.Padding.Control}"
+                    Click="Save_Click"
+                    Content="Save"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    Style="{StaticResource AccentButtonStyle}"
+                    AutomationProperties.Name="Save skill"
+                    ToolTipService.ToolTip="Saves this skill and turns it on" />
+                <Button
+                    x:Name="DiscardButton"
+                    Padding="{StaticResource AppTheme.Padding.Control}"
+                    Click="Discard_Click"
+                    Content="Discard changes"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    AutomationProperties.Name="Discard changes"
+                    ToolTipService.ToolTip="Puts back the text as it was" />
+                <Button
+                    x:Name="TurnOnButton"
+                    Padding="{StaticResource AppTheme.Padding.Control}"
+                    Click="TurnOn_Click"
+                    Content="Turn on"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    AutomationProperties.Name="Turn on skill"
+                    ToolTipService.ToolTip="The assistant may follow this text" />
+                <Button
+                    x:Name="TurnOffButton"
+                    Padding="{StaticResource AppTheme.Padding.Control}"
+                    Click="TurnOff_Click"
+                    Content="Turn off"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    AutomationProperties.Name="Turn off skill"
+                    ToolTipService.ToolTip="The assistant stops seeing this skill" />
+                <Button
+                    x:Name="RevealButton"
+                    Padding="{StaticResource AppTheme.Padding.Control}"
+                    Click="Reveal_Click"
+                    Content="Show in folder"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    AutomationProperties.Name="Show skill in folder"
+                    ToolTipService.ToolTip="Opens File Explorer at this skill's SKILL.md" />
+                <Button
+                    x:Name="RemoveButton"
+                    Padding="{StaticResource AppTheme.Padding.Control}"
+                    Content="Remove"
+                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                    AutomationProperties.Name="Remove skill"
+                    ToolTipService.ToolTip="Moves this skill's folder to the Recycle Bin">
+                    <Button.Flyout>
+                        <Flyout x:Name="RemoveFlyout" Placement="BottomEdgeAlignedRight" ShouldConstrainToRootBounds="True">
+                            <StackPanel Spacing="{StaticResource AppTheme.Spacing.Md}">
+                                <TextBlock
+                                    x:Name="RemoveQuestion"
+                                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                                    Foreground="{StaticResource AppTheme.Text.Secondary}"
+                                    TextWrapping="WrapWholeWords" />
+                                <Button
+                                    Padding="{StaticResource AppTheme.Padding.Control}"
+                                    Click="ConfirmRemove_Click"
+                                    Content="Remove"
+                                    FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                                    AutomationProperties.Name="Confirm remove skill"
+                                    ToolTipService.ToolTip="Moves the folder to the Recycle Bin" />
+                            </StackPanel>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+            </StackPanel>
+            <InfoBar
+                x:Name="DetailError"
+                HorizontalAlignment="Stretch"
+                IsClosable="True"
+                IsOpen="False"
+                Severity="Error"
+                Title="Not saved" />
+            <InfoBar
+                x:Name="DetailNotice"
+                HorizontalAlignment="Stretch"
+                IsClosable="False"
+                IsOpen="False" />
+            <TextBox
+                x:Name="Editor"
+                Height="{StaticResource AppTheme.ComponentSize.SkillEditorHeight}"
+                AcceptsReturn="True"
+                FontFamily="{StaticResource AppTheme.FontFamily.Mono}"
+                FontSize="{StaticResource AppTheme.FontSize.SmMd}"
+                IsSpellCheckEnabled="False"
+                ScrollViewer.VerticalScrollBarVisibility="Auto"
+                TextChanged="Editor_TextChanged"
+                TextWrapping="Wrap"
+                AutomationProperties.Name="Skill text"
+                ToolTipService.ToolTip="The whole SKILL.md: name and description between the --- lines, then the steps" />
+        </StackPanel>
+    </Grid>
+</UserControl>

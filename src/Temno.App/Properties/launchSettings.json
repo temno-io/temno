@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Temno.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Temno.App (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

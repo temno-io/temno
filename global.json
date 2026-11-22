@@ -1,0 +1,8 @@
+{
+  "sdk": {
+    "version": "10.0.400",
+    "rollForward": "latestPatch",
+    "allowPrerelease": false,
+    "errorMessage": "Temno needs the .NET 10 SDK, 10.0.400 or a later 10.0.4xx patch: winget install Microsoft.DotNet.SDK.10"
+  }
+}

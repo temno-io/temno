@@ -1,0 +1,7 @@
+{
+  "environment": "development",
+  "gatewayHost": "gateway-dev.example.invalid",
+  "accountsHost": "accounts-dev.example.invalid",
+  "supabaseProjectRef": "yourprojectref000000",
+  "note": "Copy to .local/deploy-profiles/development.json or production.json; environment must match the file name. Public identifiers only (bare host names and the Supabase project ref), never a key or token. The two profiles may not share a host or project. See docs/contracts/environments.md."
+}

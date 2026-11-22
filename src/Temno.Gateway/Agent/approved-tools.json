@@ -1,0 +1,3479 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "get_projects",
+      "description": "List the user\u0027s known projects, most recently opened first. Returns projects, active project.",
+      "parameters": {
+        "type": "object"
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "open_project",
+      "description": "Open a project and make it the active one. Identify it by name, id, or path.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Project name, matched case-insensitively."
+          },
+          "id": {
+            "type": "string",
+            "description": "Project id from get_projects."
+          },
+          "path": {
+            "type": "string",
+            "description": "Filesystem path to a .temno or .palmier package."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "new_project",
+      "description": "Create a new project in the user\u0027s Temno folder and make it active.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Project name. Defaults to \u0027Untitled Project\u0027."
+          },
+          "template": {
+            "type": "string",
+            "description": "Optional saved project template name. A name that is not a saved template fails without creating a project."
+          },
+          "fps": {
+            "type": "integer",
+            "description": "Optional timeline frame rate (1-120)."
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "Optional canvas aspect ratio.",
+            "enum": [
+              "16:9",
+              "9:16",
+              "1:1",
+              "4:3",
+              "2.4:1",
+              "9:14"
+            ]
+          },
+          "quality": {
+            "type": "string",
+            "description": "Optional resolution preset.",
+            "enum": [
+              "720p",
+              "1080p",
+              "2K",
+              "4K"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "close_project",
+      "description": "Save and close an open project. Omit all arguments to close the active project.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Project name."
+          },
+          "id": {
+            "type": "string",
+            "description": "Project id from get_projects."
+          },
+          "path": {
+            "type": "string",
+            "description": "Filesystem path to a .temno or .palmier package."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "manage_project",
+      "description": "List, open, create, or close Temno projects for this MCP session. Set \u0060action\u0060 to: \u0060list\u0060 for known projects plus session-active and visible state; \u0060open\u0060 with a name, id from list, or .temno/.palmier path; \u0060create\u0060 with an optional name and initial fps/aspectRatio/quality; or \u0060close\u0060 to save and close the session project, optionally targeting another open project by name/id/path. Opening or creating changes only this session\u0027s target. Closing always completes a final save first. This tool never deletes projects or files.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Project operation.",
+            "enum": [
+              "list",
+              "open",
+              "create",
+              "close"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Project name. For open/close, matched case-insensitively; for create, defaults to \u0027Untitled Project\u0027."
+          },
+          "id": {
+            "type": "string",
+            "description": "Project id returned by action=\u0027list\u0027. Used by open or close."
+          },
+          "path": {
+            "type": "string",
+            "description": "Filesystem path to a .temno or .palmier package. Used by open or close."
+          },
+          "fps": {
+            "type": "integer",
+            "description": "Create only. Optional timeline frame rate (1-120)."
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "Create only. Optional canvas aspect ratio.",
+            "enum": [
+              "16:9",
+              "9:16",
+              "1:1",
+              "4:3",
+              "2.4:1",
+              "9:14"
+            ]
+          },
+          "quality": {
+            "type": "string",
+            "description": "Create only. Optional resolution preset applied to the aspect ratio.",
+            "enum": [
+              "720p",
+              "1080p",
+              "2K",
+              "4K"
+            ]
+          },
+          "template": {
+            "type": "string",
+            "description": "Create only. Optional saved project template name. A name that is not a saved template fails without creating a project."
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_timeline",
+      "description": "Always call at the start of a session. Returns project settings, tracks and clips.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "startFrame": {
+            "type": "integer",
+            "description": "Optional window start frame."
+          },
+          "endFrame": {
+            "type": "integer",
+            "description": "Optional window end frame."
+          },
+          "captionDetail": {
+            "type": "boolean",
+            "description": "Optional. True expands captionGroups into per-clip rows."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "inspect_timeline",
+      "description": "See the composited timeline - what the user actually sees in the preview. With no frame given, it renders the playhead frame.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "startFrame": {
+            "type": "integer",
+            "description": "Project frame to render. Omit it and endFrame to render the playhead frame, what the user sees now."
+          },
+          "endFrame": {
+            "type": "integer",
+            "description": "Optional sample end frame."
+          },
+          "maxFrames": {
+            "type": "integer",
+            "description": "Frames to sample when endFrame is set."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "validate_timeline",
+      "description": "Pre-export safety scan of the active timeline - pure read-only inspection.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "exportPresetId": {
+            "type": "string",
+            "description": "Optional saved export preset id or name."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_timeline",
+      "description": "Creates a timeline and switches to it.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Optional display name."
+          },
+          "from": {
+            "type": "string",
+            "description": "Optional timelineId to duplicate."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "set_active_timeline",
+      "description": "Switches the active timeline.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "timelineId": {
+            "type": "string",
+            "description": "Timeline id from get_media\u0027s timelines list."
+          }
+        },
+        "required": [
+          "timelineId"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "set_project_settings",
+      "description": "Change the project\u0027s frame rate, resolution, or aspect ratio.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "fps": {
+            "type": "integer",
+            "description": "Frame rate in frames per second."
+          },
+          "width": {
+            "type": "integer",
+            "description": "Canvas width in pixels."
+          },
+          "height": {
+            "type": "integer",
+            "description": "Canvas height in pixels."
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "Preset aspect ratio.",
+            "enum": [
+              "16:9",
+              "9:16",
+              "1:1",
+              "4:3",
+              "2.4:1",
+              "9:14"
+            ]
+          },
+          "quality": {
+            "type": "string",
+            "description": "Resolution quality preset.",
+            "enum": [
+              "720p",
+              "1080p",
+              "2K",
+              "4K"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "export_project",
+      "description": "Exports from the current project: video (H.264/H.265/ProRes/HEVC HDR), FCPXML, XMEML (xml), or self-contained temno package (mode name \u0060palmier\u0060 reads both, writes .temno).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "description": "Export mode.",
+            "enum": [
+              "video",
+              "xml",
+              "fcpxml",
+              "palmier"
+            ]
+          },
+          "codec": {
+            "type": "string",
+            "description": "video mode codec.",
+            "enum": [
+              "H.264",
+              "H.265",
+              "ProRes",
+              "HEVC 10-bit HDR"
+            ]
+          },
+          "resolution": {
+            "type": "string",
+            "description": "Resolution.",
+            "enum": [
+              "720p",
+              "1080p",
+              "2K",
+              "4K",
+              "Match Timeline"
+            ]
+          },
+          "outputPath": {
+            "type": "string",
+            "description": "Optional destination. When omitted, a name not yet taken in ~/Downloads (\u003Cproject\u003E.\u003Cext\u003E, then \u003Cproject\u003E 2.\u003Cext\u003E, \u2026). palmier mode adds .temno to a new package\u0027s path (a .palmier suffix becomes .temno) and replaces only an existing .temno or .palmier package that holds project.json: any other folder, a file or a link is refused. The other modes refuse a folder or a link. No mode writes inside a .temno or .palmier folder or the open project."
+          },
+          "overwrite": {
+            "type": "boolean",
+            "description": "Default true. false refuses when the destination already exists, judged after palmier mode adds .temno."
+          },
+          "fcpxmlTarget": {
+            "type": "string",
+            "description": "fcpxml mode only.",
+            "enum": [
+              "resolve",
+              "fcp"
+            ]
+          },
+          "timelineId": {
+            "type": "string",
+            "description": "Timeline to export (video/xml/fcpxml)."
+          },
+          "preset": {
+            "type": "string",
+            "description": "Export preset id or name."
+          },
+          "maxRenderQuality": {
+            "type": "boolean",
+            "description": "video mode only. true sets a higher quality target on the software H.264 and H.265 encoders (x264, x265): CRF 18 instead of 23. No effect on hardware encoders (NVENC, QSV, AMF), OpenH264 or ProRes. By default a hardware encoder is used where one exists; pass preferHardware false for this to apply."
+          },
+          "maxBitDepth": {
+            "type": "boolean",
+            "description": "video mode only. true exports HEVC 10-bit tagged HLG, whatever codec says. The picture is rendered in 8-bit SDR and converted, not processed at higher precision."
+          },
+          "preferHardware": {
+            "type": "boolean",
+            "description": "video mode only. Overrides the saved prefer-hardware-encode preference; NVENC/QSV/AMF when true, software encoders when false."
+          },
+          "background": {
+            "type": "boolean",
+            "description": "video mode only. When true, queues the render and returns a jobId immediately; poll with manage_exports."
+          },
+          "allowOfflineMedia": {
+            "type": "boolean",
+            "description": "video mode only. Default false: a timeline whose picture would be missing clips because their media is offline is refused, and the error names them. true exports anyway, like the editor\u0027s Export anyway: those parts of the picture are left blank, offlineMedia lists each offline file with the frame ranges (end exclusive) that use it, and missingPicture lists the clips the render dropped. A timeline with no picture left is still refused."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "manage_exports",
+      "description": "List queued/running exports and their progress, or cancel one by jobId. An export queued with allowOfflineMedia also lists warnings, and missingPicture once it completes.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "list or cancel.",
+            "enum": [
+              "list",
+              "cancel"
+            ]
+          },
+          "jobId": {
+            "type": "string",
+            "description": "Required for cancel. A jobId from export_project (background) or manage_exports list."
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "add_marker",
+      "description": "Adds a named marker to the active timeline at a given frame.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "frame": {
+            "type": "integer",
+            "description": "Project frame to place the marker at."
+          },
+          "name": {
+            "type": "string",
+            "description": "Optional display name."
+          },
+          "color": {
+            "type": "string",
+            "description": "Optional color.",
+            "enum": [
+              "red",
+              "orange",
+              "yellow",
+              "green",
+              "blue",
+              "purple"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional longer note."
+          }
+        },
+        "required": [
+          "frame"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_markers",
+      "description": "Lists every marker on the active timeline, sorted by frame.",
+      "parameters": {
+        "type": "object"
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "update_marker",
+      "description": "Updates one or more fields of an existing marker on the active timeline.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "markerId": {
+            "type": "string",
+            "description": "Marker id."
+          },
+          "frame": {
+            "type": "integer",
+            "description": "Optional new frame."
+          },
+          "name": {
+            "type": "string",
+            "description": "Optional new name."
+          },
+          "color": {
+            "type": "string",
+            "description": "Optional color.",
+            "enum": [
+              "red",
+              "orange",
+              "yellow",
+              "green",
+              "blue",
+              "purple"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional comment."
+          }
+        },
+        "required": [
+          "markerId"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "remove_marker",
+      "description": "Deletes a marker from the active timeline.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "markerId": {
+            "type": "string",
+            "description": "Marker id."
+          }
+        },
+        "required": [
+          "markerId"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "add_transition",
+      "description": "Adds a transition spanning the boundary of two adjacent clips on the same video track.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "clipIdA": {
+            "type": "string",
+            "description": "The outgoing clip."
+          },
+          "clipIdB": {
+            "type": "string",
+            "description": "The incoming clip."
+          },
+          "type": {
+            "type": "string",
+            "description": "Optional transition type.",
+            "enum": [
+              "crossDissolve",
+              "fadeToBlack",
+              "fadeToWhite",
+              "slideLeft",
+              "slideRight",
+              "slideUp",
+              "slideDown",
+              "wipe"
+            ]
+          },
+          "durationFrames": {
+            "type": "integer",
+            "description": "Length of the transition in project frames."
+          }
+        },
+        "required": [
+          "clipIdA",
+          "clipIdB",
+          "durationFrames"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_transitions",
+      "description": "Lists every transition on the active timeline.",
+      "parameters": {
+        "type": "object"
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "remove_transition",
+      "description": "Deletes a transition from the active timeline.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "transitionId": {
+            "type": "string",
+            "description": "Transition id."
+          }
+        },
+        "required": [
+          "transitionId"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_media",
+      "description": "The library inventory: media assets, folders, and timelines.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Optional asset ids filter."
+          },
+          "folder": {
+            "type": "string",
+            "description": "Optional folder path filter."
+          },
+          "pending": {
+            "type": "boolean",
+            "description": "Optional. True returns only pending assets."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "inspect_media",
+      "description": "Look at a media asset before referencing or editing it.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mediaRef": {
+            "type": "string",
+            "description": "Asset ID."
+          },
+          "clipId": {
+            "type": "string",
+            "description": "Optional clip ID."
+          },
+          "maxFrames": {
+            "type": "integer",
+            "description": "Sample frame count."
+          },
+          "startSeconds": {
+            "type": "number",
+            "description": "Source-time window start."
+          },
+          "endSeconds": {
+            "type": "number",
+            "description": "Window end."
+          },
+          "wordTimestamps": {
+            "type": "boolean",
+            "description": "Add word-level timestamps."
+          },
+          "overview": {
+            "type": "boolean",
+            "description": "One storyboard grid of distinct moments."
+          },
+          "language": {
+            "type": "string",
+            "description": "Optional language tag."
+          }
+        },
+        "required": [
+          "mediaRef"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "search_media",
+      "description": "Search the media library by content: what\u0027s on screen (visual) and what\u0027s said (spoken).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query."
+          },
+          "scope": {
+            "type": "string",
+            "description": "Search scope.",
+            "enum": [
+              "visual",
+              "spoken",
+              "both"
+            ]
+          },
+          "mediaRef": {
+            "type": "string",
+            "description": "Optional media ref filter."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Optional limit."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "import_media",
+      "description": "Imports external media into the project\u0027s library. A local path is copied into the project by default, so the package stays self-contained; set source.reference true to record the file where it already is instead, which matters for very large sources. A url import, and the copy of a local file of 64 MB or more, run in the background and return {mediaRef, status:\u0027downloading\u0027}: poll get_media with ids:[mediaRef] until generationStatus clears (\u0027failed: \u003Creason\u003E\u0027 means it did not land). Every other import finishes in the call and returns status:\u0027ready\u0027.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "object",
+            "description": "Source details.",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "HTTPS URL. The type comes from mimeType when set, else from the URL path\u0027s extension; with neither, the download runs inside the call."
+              },
+              "path": {
+                "type": "string",
+                "description": "Absolute local path."
+              },
+              "bytes": {
+                "type": "string",
+                "description": "Base64 encoded bytes."
+              },
+              "matte": {
+                "type": "object",
+                "description": "Solid color PNG matte generation.",
+                "properties": {
+                  "hex": {
+                    "type": "string",
+                    "description": "Hex color."
+                  },
+                  "aspectRatio": {
+                    "type": "string",
+                    "description": "Aspect ratio.",
+                    "enum": [
+                      "Project",
+                      "16:9",
+                      "9:16",
+                      "1:1",
+                      "4:3",
+                      "9:14",
+                      "2.4:1"
+                    ]
+                  }
+                },
+                "required": [
+                  "hex"
+                ]
+              },
+              "mimeType": {
+                "type": "string",
+                "description": "Mime type."
+              },
+              "reference": {
+                "type": "boolean",
+                "description": "Local path only. True records the file where it already is (media.json external.absolutePath) instead of copying it into the project. The project stays small and the import is instant, but it is no longer self-contained: move or delete the original and the asset goes offline. Defaults to false (copy)."
+              }
+            }
+          },
+          "path": {
+            "type": "string",
+            "description": "Legacy absolute local path. Prefer source.path. Do not combine with source."
+          },
+          "name": {
+            "type": "string",
+            "description": "Optional display name."
+          },
+          "targetName": {
+            "type": "string",
+            "description": "Legacy alias of name."
+          },
+          "folder": {
+            "type": "string",
+            "description": "Optional destination folder path."
+          },
+          "folderId": {
+            "type": "string",
+            "description": "Legacy destination folder id. Prefer folder."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "organize_media",
+      "description": "Reorganizes the library in one undoable action.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "createFolders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "moves": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "into": {
+                  "type": "string",
+                  "description": "Destination folder path."
+                }
+              },
+              "required": [
+                "items"
+              ]
+            }
+          },
+          "renames": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "item": {
+                  "type": "string",
+                  "description": "Asset, timeline, or folder."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "New name."
+                }
+              },
+              "required": [
+                "item",
+                "name"
+              ]
+            }
+          },
+          "deletes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "manage_tracks",
+      "description": "Track-level operations in one undoable action: reorder, set flags, and remove.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "reorder": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "description": "Track to move."
+                },
+                "trackId": {
+                  "type": "string",
+                  "description": "Stable track id from get_timeline."
+                },
+                "to": {
+                  "type": "integer",
+                  "description": "Destination index."
+                }
+              },
+              "required": [
+                "to"
+              ]
+            }
+          },
+          "set": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "description": "Track to change."
+                },
+                "trackId": {
+                  "type": "string",
+                  "description": "Stable track id from get_timeline."
+                },
+                "muted": {
+                  "type": "boolean",
+                  "description": "Mute/unmute."
+                },
+                "hidden": {
+                  "type": "boolean",
+                  "description": "Hide/unhide."
+                },
+                "syncLocked": {
+                  "type": "boolean",
+                  "description": "Sync lock."
+                }
+              }
+            }
+          },
+          "remove": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "description": "Track index to remove."
+                },
+                "trackId": {
+                  "type": "string",
+                  "description": "Stable track id from get_timeline."
+                }
+              }
+            }
+          },
+          "action": {
+            "type": "string",
+            "description": "Legacy operation. Prefer reorder, set, and remove.",
+            "enum": [
+              "add",
+              "remove"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "description": "Legacy track type for action=add."
+          },
+          "trackIndex": {
+            "type": "integer",
+            "description": "Legacy track index for action=remove."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "add_clips",
+      "description": "Places one or more media assets on the timeline as a single undoable action. When a video asset with audio is placed on a video track, a linked audio clip is automatically created on an audio track (an existing one if available, otherwise a new one); the pair shares a link group and one undo removes both.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "mediaRef": {
+                  "type": "string",
+                  "description": "ID of media asset."
+                },
+                "trackIndex": {
+                  "type": "integer",
+                  "description": "Optional track index."
+                },
+                "startFrame": {
+                  "type": "integer",
+                  "description": "Timeline frame position."
+                },
+                "endFrame": {
+                  "type": "integer",
+                  "description": "Optional end frame."
+                },
+                "source": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              },
+              "required": [
+                "mediaRef",
+                "startFrame"
+              ]
+            }
+          }
+        },
+        "required": [
+          "entries"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "insert_clips",
+      "description": "Inserts one or more media assets at a single point and RIPPLES. As in add_clips, a video asset with audio spawns a linked audio clip, and the push is applied to the audio track that clip lands on so the pair stays aligned.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "trackIndex": {
+            "type": "integer",
+            "description": "Track to insert into."
+          },
+          "atFrame": {
+            "type": "integer",
+            "description": "Timeline frame where insertion begins."
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "mediaRef": {
+                  "type": "string",
+                  "description": "ID of media asset."
+                },
+                "source": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "durationFrames": {
+                  "type": "integer",
+                  "description": "Duration in frames."
+                }
+              },
+              "required": [
+                "mediaRef"
+              ]
+            }
+          }
+        },
+        "required": [
+          "trackIndex",
+          "atFrame",
+          "entries"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "move_clips",
+      "description": "Moves one or more clips to a new track and/or frame position.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "moves": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "clipId": {
+                  "type": "string",
+                  "description": "Clip to move."
+                },
+                "toTrack": {
+                  "type": "integer",
+                  "description": "Destination track index."
+                },
+                "toFrame": {
+                  "type": "integer",
+                  "description": "Destination start frame."
+                }
+              },
+              "required": [
+                "clipId"
+              ]
+            }
+          }
+        },
+        "required": [
+          "moves"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "remove_clips",
+      "description": "Removes one or more clips by ID.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "clipIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "clipIds"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "restore_linked_audio",
+      "description": "Repairs timelines built before linked-audio partners existed: for every listed video clip whose media has audio and which has no linked audio clip yet, creates the audio partner add_clips would have made (same occupancy rule, never overwrites, one undo). Clips that need nothing are reported as skipped with a reason.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "clipIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "clipIds"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "split_clips",
+      "description": "Splits clips into two at one or more cut points.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "splits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "clipId": {
+                  "type": "string",
+                  "description": "Clip ID."
+                },
+                "atFrame": {
+                  "type": "integer",
+                  "description": "Split frame."
+                }
+              },
+              "required": [
+                "clipId",
+                "atFrame"
+              ]
+            }
+          },
+          "trackIndex": {
+            "type": "integer",
+            "description": "Track to cut."
+          },
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "ripple_delete_ranges",
+      "description": "Cuts one or more ranges out and closes the gaps in one undoable action. Give exactly one of clipId or trackIndex. Linked clips stay together: every clip the cut trims or moves takes its partners (a video clip\u0027s linked audio, a multicam group\u0027s other clips) with it, cut by the same frames on their tracks. If a partner\u0027s track holds an unrelated clip inside a range, nothing is cut and the error names that clip. Answers removedFrames.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "trackIndex": {
+            "type": "integer",
+            "description": "Track index; ranges are project frames."
+          },
+          "clipId": {
+            "type": "string",
+            "description": "Clip ID; ranges are clamped to the clip."
+          },
+          "ranges": {
+            "type": "array",
+            "description": "Ranges to remove, each a [start, end] pair (end \u003E start).",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "units": {
+            "type": "string",
+            "description": "Ranges unit, default frames (project frames). seconds are the clip\u0027s source seconds and need clipId.",
+            "enum": [
+              "seconds",
+              "frames"
+            ]
+          },
+          "ignoreSyncLockedTracks": {
+            "type": "array",
+            "description": "Accepted for Mac parity. Windows has no sync lock, so it has no effect.",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "required": [
+          "ranges"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "set_clip_properties",
+      "description": "Apply the same generic clip property values to one or more clips.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "clipIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "durationFrames": {
+            "type": "integer",
+            "description": "New duration."
+          },
+          "trimStartFrame": {
+            "type": "integer",
+            "description": "Trim start frame."
+          },
+          "trimEndFrame": {
+            "type": "integer",
+            "description": "Trim end frame."
+          },
+          "speed": {
+            "type": "number",
+            "description": "Playback speed multiplier."
+          },
+          "volume": {
+            "type": "number",
+            "description": "Volume 0-1."
+          },
+          "opacity": {
+            "type": "number",
+            "description": "Opacity 0-1."
+          },
+          "transform": {
+            "type": "object",
+            "properties": {
+              "centerX": {
+                "type": "number",
+                "description": "centerX"
+              },
+              "centerY": {
+                "type": "number",
+                "description": "centerY"
+              },
+              "width": {
+                "type": "number",
+                "description": "width"
+              },
+              "height": {
+                "type": "number",
+                "description": "height"
+              },
+              "flipHorizontal": {
+                "type": "boolean",
+                "description": "flipHorizontal"
+              },
+              "flipVertical": {
+                "type": "boolean",
+                "description": "flipVertical"
+              }
+            }
+          },
+          "blendMode": {
+            "type": "string",
+            "description": "Blend mode.",
+            "enum": [
+              "normal",
+              "multiply",
+              "screen",
+              "overlay",
+              "darken",
+              "lighten",
+              "colorDodge",
+              "colorBurn",
+              "hardLight",
+              "softLight",
+              "difference",
+              "exclusion",
+              "hue",
+              "saturation",
+              "color",
+              "luminosity"
+            ]
+          }
+        },
+        "required": [
+          "clipIds"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "set_keyframes",
+      "description": "Set animated keyframes on one property of one clip.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "clipId": {
+            "type": "string",
+            "description": "Clip ID."
+          },
+          "property": {
+            "type": "string",
+            "description": "Property.",
+            "enum": [
+              "volume",
+              "opacity",
+              "rotation",
+              "position",
+              "scale",
+              "crop"
+            ]
+          },
+          "keyframes": {
+            "type": "array",
+            "description": "Rows of [frame, ...values, interpolation?]; interpolation is linear, hold or smooth. An empty array clears the track.",
+            "items": {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "clipId",
+          "property",
+          "keyframes"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "apply_layout",
+      "description": "Arrange multiple clips into a common multi-video layout (split screen, picture-in-picture, grid).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "layout": {
+            "type": "string",
+            "description": "Layout.",
+            "enum": [
+              "full",
+              "side_by_side",
+              "top_bottom",
+              "pip_bottom_right",
+              "pip_bottom_left",
+              "pip_top_right",
+              "pip_top_left",
+              "grid_2x2",
+              "main_sidebar",
+              "three_up"
+            ]
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "slot": {
+                  "type": "string",
+                  "description": "Slot name."
+                },
+                "mediaRef": {
+                  "type": "string",
+                  "description": "Asset ID."
+                },
+                "clipIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "anchor": {
+                  "type": "string",
+                  "description": "Coarse anchor.",
+                  "enum": [
+                    "center",
+                    "top",
+                    "bottom",
+                    "left",
+                    "right",
+                    "top_left",
+                    "top_right",
+                    "bottom_left",
+                    "bottom_right"
+                  ]
+                },
+                "anchorX": {
+                  "type": "number",
+                  "description": "Fine horizontal framing."
+                },
+                "anchorY": {
+                  "type": "number",
+                  "description": "Fine vertical framing."
+                }
+              },
+              "required": [
+                "slot"
+              ]
+            }
+          },
+          "startFrame": {
+            "type": "integer",
+            "description": "Start frame."
+          },
+          "endFrame": {
+            "type": "integer",
+            "description": "End frame."
+          },
+          "fit": {
+            "type": "string",
+            "description": "Fit mode.",
+            "enum": [
+              "fill",
+              "fit"
+            ]
+          }
+        },
+        "required": [
+          "layout",
+          "slots"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "suggest_crop",
+      "description": "Auto-reframe one clip for a different aspect ratio.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "clipId": {
+            "type": "string",
+            "description": "Clip ID."
+          },
+          "targetAspect": {
+            "type": "number",
+            "description": "Target aspect ratio."
+          },
+          "apply": {
+            "type": "boolean",
+            "description": "Apply automatically."
+          }
+        },
+        "required": [
+          "clipId"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "sync_clips",
+      "description": "Align one or more clips to a reference clip by shifting targets on the timeline.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "referenceClipId": {
+            "type": "string",
+            "description": "Reference clip ID."
+          },
+          "targetClipId": {
+            "type": "string",
+            "description": "Single clip to align."
+          },
+          "targetClipIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mode": {
+            "type": "string",
+            "description": "Sync mode.",
+            "enum": [
+              "auto",
+              "audio",
+              "timecode"
+            ]
+          },
+          "searchWindowSeconds": {
+            "type": "number",
+            "description": "Search window size."
+          },
+          "minConfidence": {
+            "type": "number",
+            "description": "Minimum confidence."
+          }
+        },
+        "required": [
+          "referenceClipId"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "manage_multicam",
+      "description": "Create or ungroup a multicam group. create syncs session media into stamped timeline clips; ungroup strips multicam stamps.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "create": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Group display name."
+              },
+              "master": {
+                "type": "string",
+                "description": "Master mediaRef (default first camera)."
+              },
+              "startFrame": {
+                "type": "integer",
+                "description": "Timeline start for placement."
+              },
+              "searchWindowSeconds": {
+                "type": "number",
+                "description": "Audio sync window."
+              },
+              "members": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "mediaRef": {
+                      "type": "string",
+                      "description": "Asset ID."
+                    },
+                    "kind": {
+                      "type": "string",
+                      "description": "Member kind.",
+                      "enum": [
+                        "angle",
+                        "mic",
+                        "both"
+                      ]
+                    },
+                    "angleLabel": {
+                      "type": "string",
+                      "description": "Label for change_cam."
+                    },
+                    "offsetSeconds": {
+                      "type": "number",
+                      "description": "Pinned sync offset."
+                    }
+                  },
+                  "required": [
+                    "mediaRef",
+                    "kind"
+                  ]
+                }
+              }
+            }
+          },
+          "ungroup": {
+            "type": "object",
+            "properties": {
+              "groupId": {
+                "type": "string",
+                "description": "Multicam group id."
+              }
+            },
+            "required": [
+              "groupId"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "change_cam",
+      "description": "Switch a multicam group\u0027s camera angle over timeline frame ranges. Full-frame: {range, angle}. Multi-angle layout: {range, layout, angles} places primary in the main slot and extras as overlays (side_by_side, pip_*, grid_2x2, \u2026).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "groupId": {
+            "type": "string",
+            "description": "Multicam group id."
+          },
+          "clipId": {
+            "type": "string",
+            "description": "Any clip in the group (alternative to groupId)."
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "range": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                "angle": {
+                  "type": "string",
+                  "description": "angleLabel for full-frame switch (from get_multicam)."
+                },
+                "layout": {
+                  "type": "string",
+                  "description": "Multi-angle layout (not full). angleLabels fill slots in order.",
+                  "enum": [
+                    "side_by_side",
+                    "top_bottom",
+                    "pip_bottom_right",
+                    "pip_bottom_left",
+                    "pip_top_right",
+                    "pip_top_left",
+                    "grid_2x2",
+                    "main_sidebar",
+                    "three_up"
+                  ]
+                },
+                "angles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "angleLabel in slot order; first is program/main."
+                  },
+                  "description": "Required with layout. Fewer than slots leaves cells empty."
+                }
+              },
+              "required": [
+                "range"
+              ]
+            }
+          }
+        },
+        "required": [
+          "entries"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_multicam",
+      "description": "Read a multicam group: members, program cut rows, and track indexes.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "groupId": {
+            "type": "string",
+            "description": "Multicam group id."
+          },
+          "clipId": {
+            "type": "string",
+            "description": "Any clip in the group."
+          },
+          "startFrame": {
+            "type": "integer",
+            "description": "Optional program window start."
+          },
+          "endFrame": {
+            "type": "integer",
+            "description": "Optional program window end."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "undo",
+      "description": "Reverts the assistant\u0027s most recent timeline edit.",
+      "parameters": {
+        "type": "object"
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "redo",
+      "description": "Re-applies the assistant\u0027s most recently undone timeline edit.",
+      "parameters": {
+        "type": "object"
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_transcript",
+      "description": "Returns the spoken transcript of the CURRENT timeline in project frames (on-device Whisper; cached).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "startFrame": {
+            "type": "integer",
+            "description": "Start frame."
+          },
+          "endFrame": {
+            "type": "integer",
+            "description": "End frame."
+          },
+          "clipId": {
+            "type": "string",
+            "description": "Clip ID."
+          },
+          "trackIndex": {
+            "type": "integer",
+            "description": "Transcribe only this track index."
+          },
+          "granularity": {
+            "type": "string",
+            "description": "Words or segments.",
+            "enum": [
+              "words",
+              "segments"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "description": "Language tag."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "remove_words",
+      "description": "Cut speech by the word, Descript-style.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "words": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cutAggressiveness": {
+            "type": "string",
+            "description": "Cut aggressiveness.",
+            "enum": [
+              "tight",
+              "balanced",
+              "loose"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "description": "Language tag."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "remove_silence",
+      "description": "Remove dead air - quiet, speech-free sections - from the timeline\u0027s audio.",
+      "parameters": {
+        "type": "object"
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "detect_beats",
+      "description": "Detect musical beats and downbeats in a media asset\u0027s audio, on-device.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mediaRef": {
+            "type": "string",
+            "description": "Audio or video asset ID."
+          },
+          "startSeconds": {
+            "type": "number",
+            "description": "Start time."
+          },
+          "endSeconds": {
+            "type": "number",
+            "description": "End time."
+          }
+        },
+        "required": [
+          "mediaRef"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "add_texts",
+      "description": "Adds text clips as timeline layers.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "trackIndex": {
+                  "type": "integer",
+                  "description": "Track index."
+                },
+                "startFrame": {
+                  "type": "integer",
+                  "description": "Start frame."
+                },
+                "endFrame": {
+                  "type": "integer",
+                  "description": "End frame."
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Text content."
+                },
+                "transform": {
+                  "type": "object",
+                  "properties": {
+                    "centerX": {
+                      "type": "number",
+                      "description": "0-1 horizontal center."
+                    },
+                    "centerY": {
+                      "type": "number",
+                      "description": "0-1 vertical center."
+                    },
+                    "width": {
+                      "type": "number",
+                      "description": "0-1 width."
+                    },
+                    "height": {
+                      "type": "number",
+                      "description": "0-1 height."
+                    }
+                  }
+                },
+                "fontName": {
+                  "type": "string",
+                  "description": "Font name."
+                },
+                "fontSize": {
+                  "type": "number",
+                  "description": "Canvas points."
+                },
+                "isBold": {
+                  "type": "boolean",
+                  "description": "Bold."
+                },
+                "isItalic": {
+                  "type": "boolean",
+                  "description": "Italic."
+                },
+                "color": {
+                  "type": "string",
+                  "description": "Text color hex."
+                },
+                "alignment": {
+                  "type": "string",
+                  "description": "Text alignment.",
+                  "enum": [
+                    "left",
+                    "center",
+                    "right"
+                  ]
+                },
+                "borderColor": {
+                  "type": "string",
+                  "description": "Text outline hex; enables outline."
+                },
+                "backgroundColor": {
+                  "type": "string",
+                  "description": "Text box fill hex; enables fill."
+                },
+                "animation": {
+                  "type": "string",
+                  "description": "Animation preset; off clears.",
+                  "enum": [
+                    "off",
+                    "fadeIn",
+                    "popIn",
+                    "slideUp",
+                    "typewriter",
+                    "wordReveal",
+                    "wordSlide",
+                    "wordPop",
+                    "wordCycle",
+                    "highlightPop",
+                    "highlightBlock"
+                  ]
+                },
+                "highlightColor": {
+                  "type": "string",
+                  "description": "Highlight color hex."
+                }
+              },
+              "required": [
+                "startFrame",
+                "endFrame",
+                "content"
+              ]
+            }
+          }
+        },
+        "required": [
+          "entries"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "update_text",
+      "description": "Updates text clips or a captionGroupId.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "clipIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "captionGroupId": {
+            "type": "string",
+            "description": "Caption group ID."
+          },
+          "content": {
+            "type": "string",
+            "description": "Replacement text."
+          },
+          "transform": {
+            "type": "object",
+            "properties": {
+              "centerX": {
+                "type": "number",
+                "description": "0-1 horizontal center."
+              },
+              "centerY": {
+                "type": "number",
+                "description": "0-1 vertical center."
+              },
+              "width": {
+                "type": "number",
+                "description": "0-1 width."
+              },
+              "height": {
+                "type": "number",
+                "description": "0-1 height."
+              }
+            }
+          },
+          "fontName": {
+            "type": "string",
+            "description": "Font name."
+          },
+          "fontSize": {
+            "type": "number",
+            "description": "Canvas points."
+          },
+          "isBold": {
+            "type": "boolean",
+            "description": "Bold."
+          },
+          "isItalic": {
+            "type": "boolean",
+            "description": "Italic."
+          },
+          "color": {
+            "type": "string",
+            "description": "Text color hex."
+          },
+          "alignment": {
+            "type": "string",
+            "description": "Text alignment.",
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ]
+          },
+          "borderColor": {
+            "type": "string",
+            "description": "Text outline hex; enables outline."
+          },
+          "backgroundColor": {
+            "type": "string",
+            "description": "Text box fill hex; enables fill."
+          },
+          "animation": {
+            "type": "string",
+            "description": "Animation preset; off clears.",
+            "enum": [
+              "off",
+              "fadeIn",
+              "popIn",
+              "slideUp",
+              "typewriter",
+              "wordReveal",
+              "wordSlide",
+              "wordPop",
+              "wordCycle",
+              "highlightPop",
+              "highlightBlock"
+            ]
+          },
+          "highlightColor": {
+            "type": "string",
+            "description": "Highlight color hex."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "add_captions",
+      "description": "Transcribes spoken audio with on-device Whisper and creates styled caption text clips.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "language": {
+            "type": "string",
+            "description": "Language tag."
+          },
+          "transform": {
+            "type": "object",
+            "properties": {
+              "centerX": {
+                "type": "number",
+                "description": "centerX"
+              },
+              "centerY": {
+                "type": "number",
+                "description": "centerY"
+              },
+              "rotation": {
+                "type": "number",
+                "description": "Rotation in degrees, clockwise."
+              }
+            }
+          },
+          "textCase": {
+            "type": "string",
+            "description": "Text case.",
+            "enum": [
+              "auto",
+              "upper",
+              "lower"
+            ]
+          },
+          "censorProfanity": {
+            "type": "boolean",
+            "description": "Rejected on Windows Whisper (Apple Speech only)."
+          },
+          "maxWords": {
+            "type": "integer",
+            "description": "Max words per caption."
+          },
+          "maxCharacters": {
+            "type": "integer",
+            "description": "Max characters per caption."
+          },
+          "maximumGapSeconds": {
+            "type": "number",
+            "description": "Close gaps up to this many seconds (0-2, default 0.5)."
+          },
+          "trackIndex": {
+            "type": "integer",
+            "description": "Caption only this track index instead of auto-detecting."
+          },
+          "subtitleMediaRef": {
+            "type": "string",
+            "description": "SRT/VTT library asset to place as captions. Cannot be combined with any other argument."
+          },
+          "fontName": {
+            "type": "string",
+            "description": "Font name."
+          },
+          "fontSize": {
+            "type": "number",
+            "description": "Canvas points."
+          },
+          "isBold": {
+            "type": "boolean",
+            "description": "Bold."
+          },
+          "isItalic": {
+            "type": "boolean",
+            "description": "Italic."
+          },
+          "color": {
+            "type": "string",
+            "description": "Text color hex."
+          },
+          "alignment": {
+            "type": "string",
+            "description": "Text alignment.",
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ]
+          },
+          "borderColor": {
+            "type": "string",
+            "description": "Text outline hex; enables outline."
+          },
+          "backgroundColor": {
+            "type": "string",
+            "description": "Text box fill hex; enables fill."
+          },
+          "animation": {
+            "type": "string",
+            "description": "Animation preset; off clears.",
+            "enum": [
+              "off",
+              "fadeIn",
+              "popIn",
+              "slideUp",
+              "typewriter",
+              "wordReveal",
+              "wordSlide",
+              "wordPop",
+              "wordCycle",
+              "highlightPop",
+              "highlightBlock"
+            ]
+          },
+          "highlightColor": {
+            "type": "string",
+            "description": "Highlight color hex."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "apply_color",
+      "description": "Author/refine a color grade on video/image clips with named controls.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "clipIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reset": {
+            "type": "boolean",
+            "description": "Reset."
+          },
+          "color": {
+            "type": "object"
+          },
+          "exposure": {
+            "type": "number",
+            "description": "exposure"
+          },
+          "contrast": {
+            "type": "number",
+            "description": "contrast"
+          },
+          "saturation": {
+            "type": "number",
+            "description": "saturation"
+          },
+          "vibrance": {
+            "type": "number",
+            "description": "vibrance"
+          },
+          "temperature": {
+            "type": "number",
+            "description": "temperature"
+          },
+          "tint": {
+            "type": "number",
+            "description": "tint"
+          },
+          "highlights": {
+            "type": "number",
+            "description": "highlights"
+          },
+          "shadows": {
+            "type": "number",
+            "description": "shadows"
+          },
+          "blacks": {
+            "type": "number",
+            "description": "blacks"
+          },
+          "whites": {
+            "type": "number",
+            "description": "whites"
+          },
+          "shadowsHue": {
+            "type": "number",
+            "description": "shadowsHue"
+          },
+          "shadowsAmount": {
+            "type": "number",
+            "description": "shadowsAmount"
+          },
+          "shadowsLum": {
+            "type": "number",
+            "description": "shadowsLum"
+          },
+          "midsHue": {
+            "type": "number",
+            "description": "midsHue"
+          },
+          "midsAmount": {
+            "type": "number",
+            "description": "midsAmount"
+          },
+          "midsGamma": {
+            "type": "number",
+            "description": "midsGamma"
+          },
+          "highsHue": {
+            "type": "number",
+            "description": "highsHue"
+          },
+          "highsAmount": {
+            "type": "number",
+            "description": "highsAmount"
+          },
+          "highsGain": {
+            "type": "number",
+            "description": "highsGain"
+          },
+          "masterCurve": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "redCurve": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "greenCurve": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "blueCurve": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "hueCurves": {
+            "type": "object",
+            "properties": {
+              "targets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "targetHue": {
+                      "type": "number",
+                      "description": "targetHue"
+                    },
+                    "hueShift": {
+                      "type": "number",
+                      "description": "hueShift"
+                    },
+                    "satScale": {
+                      "type": "number",
+                      "description": "satScale"
+                    },
+                    "lumShift": {
+                      "type": "number",
+                      "description": "lumShift"
+                    }
+                  },
+                  "required": [
+                    "targetHue"
+                  ]
+                }
+              }
+            }
+          },
+          "lut": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "LUT path."
+              },
+              "strength": {
+                "type": "number",
+                "description": "Strength."
+              }
+            }
+          }
+        },
+        "required": [
+          "clipIds"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "apply_effect",
+      "description": "Apply non-color effects to video/image clips. Optional effect position sets the final stack index; omitting it does not reorder an effect already on the clip.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "clipIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "Effect type ID."
+                },
+                "params": {
+                  "type": "object"
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enabled."
+                },
+                "position": {
+                  "type": "integer",
+                  "description": "Optional zero-based final index. Omit to keep an existing effect where it is, or to insert a new effect at its catalog position."
+                }
+              },
+              "required": [
+                "type"
+              ]
+            }
+          },
+          "remove": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "clipIds"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "inspect_color",
+      "description": "Measure color scopes of a timeline clip\u0027s current graded look.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "clipId": {
+            "type": "string",
+            "description": "Clip ID."
+          },
+          "mediaRef": {
+            "type": "string",
+            "description": "Media reference ID."
+          },
+          "atFrame": {
+            "type": "integer",
+            "description": "Frame index."
+          },
+          "reference": {
+            "type": "string",
+            "description": "Reference asset ID."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "denoise_audio",
+      "description": "Apply deterministic Windows denoise to audio clips during shared preview/export decoding.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "clipIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "strength": {
+            "type": "number",
+            "description": "Strength (0-1)."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Enabled."
+          }
+        },
+        "required": [
+          "clipIds"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "duck_audio",
+      "description": "Writes attack/release volume envelopes on a background audio track under voice-clip coverage.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "voiceTrack": {
+            "type": "integer",
+            "description": "Voice track index."
+          },
+          "bgTrack": {
+            "type": "integer",
+            "description": "Background track index."
+          },
+          "reductionDb": {
+            "type": "number",
+            "description": "Reduction in dB."
+          },
+          "attack": {
+            "type": "number",
+            "description": "Attack time in seconds (default 0.12)."
+          },
+          "release": {
+            "type": "number",
+            "description": "Release time in seconds (default 0.30)."
+          },
+          "source": {
+            "type": "string",
+            "description": "Only auto (voice-clip coverage) is currently supported.",
+            "enum": [
+              "auto",
+              "transcript",
+              "vad"
+            ]
+          }
+        },
+        "required": [
+          "voiceTrack",
+          "bgTrack",
+          "reductionDb"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_models",
+      "description": "Lists AI models with their capabilities.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Model type.",
+            "enum": [
+              "video",
+              "image",
+              "audio",
+              "upscale"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "generate_video",
+      "description": "Starts an async AI video generation. It costs the user real money with a real provider (Temno credits when hosted, their own provider\u0027s bill on their key), so call it only after the user says yes to your proposal. Hosted generation is quote-only: call quote_media first, show its credits in the proposal, and pass its quoteId; the quote binds prompt, settings and inputs. BYOK and demo take the direct arguments.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Text description. Required for BYOK and demo; with a quoteId it may be omitted, or must match the quote."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model ID."
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Duration in seconds (BYOK and demo; hosted durations are quote_media settings)."
+          },
+          "operation": {
+            "type": "string",
+            "description": "Must match the quoted operation when given."
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "Aspect ratio."
+          },
+          "resolution": {
+            "type": "string",
+            "description": "Resolution."
+          },
+          "startFrameMediaRef": {
+            "type": "string",
+            "description": "Start frame mediaRef."
+          },
+          "endFrameMediaRef": {
+            "type": "string",
+            "description": "End frame mediaRef."
+          },
+          "sourceVideoMediaRef": {
+            "type": "string",
+            "description": "Source video mediaRef."
+          },
+          "sourceClipId": {
+            "type": "string",
+            "description": "Source clip ID."
+          },
+          "referenceImageMediaRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "referenceVideoMediaRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "referenceAudioMediaRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "quoteId": {
+            "type": "string",
+            "description": "Accepted quote_media id. Required for hosted generation."
+          },
+          "maxCredits": {
+            "type": "integer",
+            "description": "Optional accepted spend cap; the submit fails when the quote exceeds it."
+          },
+          "settings": {
+            "type": "object",
+            "description": "Must match the quoted settings when given."
+          },
+          "inputs": {
+            "type": "array",
+            "description": "Must match the quoted inputs when given.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "Input role."
+                },
+                "mediaRef": {
+                  "type": "string",
+                  "description": "Asset ID."
+                }
+              },
+              "required": [
+                "role",
+                "mediaRef"
+              ]
+            }
+          },
+          "folder": {
+            "type": "string",
+            "description": "Folder path."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "quote_media",
+      "description": "Quotes a hosted video, audio, or upscale generation without spending. Pass the returned quoteId to generate_video, generate_audio, or upscale_media; any model, operation, prompt, settings, or input change needs a fresh quote. Free to cancel until rendering starts.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Hosted media model ID from list_models."
+          },
+          "operation": {
+            "type": "string",
+            "description": "Media operation.",
+            "enum": [
+              "text_to_video",
+              "image_to_video",
+              "reference_to_video",
+              "video_edit",
+              "motion_control",
+              "lip_sync",
+              "text_to_music",
+              "video_to_music",
+              "text_to_sfx",
+              "video_to_sfx",
+              "text_to_speech",
+              "dubbing",
+              "audio_isolation",
+              "text_to_audio",
+              "upscale_video",
+              "upscale_image"
+            ]
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Text description. May be empty only for input-only operations."
+          },
+          "settings": {
+            "type": "object",
+            "description": "Temno option names to values; unknown names are rejected."
+          },
+          "inputs": {
+            "type": "array",
+            "description": "Ordered {role, mediaRef} inputs. Roles: first_frame, last_frame, reference_image, source_video, source_audio.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "Input role."
+                },
+                "mediaRef": {
+                  "type": "string",
+                  "description": "Asset ID."
+                }
+              },
+              "required": [
+                "role",
+                "mediaRef"
+              ]
+            }
+          }
+        },
+        "required": [
+          "model",
+          "operation"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "generate_image",
+      "description": "Starts an async AI image generation. It costs the user real money with a real provider (Temno credits when hosted, their own provider\u0027s bill on their key), so call it only after the user says yes to your proposal. Hosted generation is quote-only: call quote_image first, show its credits in the proposal, and pass its quoteId. BYOK and demo take the direct arguments.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Text description. Required for BYOK and demo; with a quoteId it may be omitted, or must match the quote."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model ID."
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "Aspect ratio."
+          },
+          "resolution": {
+            "type": "string",
+            "description": "Resolution."
+          },
+          "quality": {
+            "type": "string",
+            "description": "Quality."
+          },
+          "settings": {
+            "type": "object",
+            "description": "Hosted Temno option names to values; unknown names are rejected."
+          },
+          "referenceMediaRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "maskMediaRef": {
+            "type": "string",
+            "description": "Mask asset ID (hosted mask-capable operations)."
+          },
+          "quoteId": {
+            "type": "string",
+            "description": "Accepted quote_image id. Required for hosted generation."
+          },
+          "maxCredits": {
+            "type": "integer",
+            "description": "Optional accepted spend cap; the submit fails when the quote exceeds it."
+          },
+          "folder": {
+            "type": "string",
+            "description": "Folder path."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "quote_image",
+      "description": "Quotes a hosted image generation or edit without spending. Pass the returned quoteId to generate_image or edit_image; any prompt, model, operation, settings, or source change needs a fresh quote. Free to cancel until rendering starts.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Text description."
+          },
+          "model": {
+            "type": "string",
+            "description": "Hosted image model ID from list_models."
+          },
+          "operation": {
+            "type": "string",
+            "description": "Image operation.",
+            "enum": [
+              "generate_image",
+              "edit_image"
+            ]
+          },
+          "settings": {
+            "type": "object",
+            "description": "Temno option names to values; unknown names are rejected."
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "Legacy alias for the aspect_ratio setting."
+          },
+          "resolution": {
+            "type": "string",
+            "description": "Legacy alias for the resolution setting."
+          },
+          "quality": {
+            "type": "string",
+            "description": "Legacy alias for the quality setting."
+          },
+          "referenceMediaRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "maskMediaRef": {
+            "type": "string",
+            "description": "Mask asset ID (mask-capable operations)."
+          }
+        },
+        "required": [
+          "prompt",
+          "model"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "edit_image",
+      "description": "Starts an async hosted AI image edit from a quote_image quote. It spends the user\u0027s Temno credits, so call it only after the user says yes to a proposal that showed the quote\u0027s credits. Edit needs at least one source image bound in the quote.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "quoteId": {
+            "type": "string",
+            "description": "Accepted quote_image id."
+          },
+          "maxCredits": {
+            "type": "integer",
+            "description": "Optional accepted spend cap; the submit fails when the quote exceeds it."
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Must match the quoted prompt when given."
+          },
+          "model": {
+            "type": "string",
+            "description": "Must match the quoted model when given."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "settings": {
+            "type": "object",
+            "description": "Must match the quoted settings when given."
+          },
+          "referenceMediaRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "maskMediaRef": {
+            "type": "string",
+            "description": "Must match the quoted mask when given."
+          },
+          "folder": {
+            "type": "string",
+            "description": "Folder path."
+          }
+        },
+        "required": [
+          "quoteId"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "resume_generation",
+      "description": "Resumes a hosted generation that is still pending, rendering, or recovering. It does not start a new job or spend again. Pass mediaRef to resume one placeholder; omit it to resume every unfinished generation for this account, including ones whose project is not open.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mediaRef": {
+            "type": "string",
+            "description": "Placeholder asset id. Omit to resume every unfinished hosted generation."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "generate_audio",
+      "description": "Starts an async AI audio generation: text-to-speech, text-to-music, or video-to-music. It costs the user real money with a real provider (Temno credits when hosted, their own provider\u0027s bill on their key), so call it only after the user says yes to your proposal. Hosted generation is quote-only: call quote_media first, show its credits in the proposal, and pass its quoteId; the quote binds prompt, settings and inputs. BYOK and demo take the direct arguments.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Required for TTS and text-to-music."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model ID."
+          },
+          "voice": {
+            "type": "string",
+            "description": "TTS only voice name."
+          },
+          "operation": {
+            "type": "string",
+            "description": "Must match the quoted operation when given."
+          },
+          "lyrics": {
+            "type": "string",
+            "description": "MiniMax only lyrics."
+          },
+          "styleInstructions": {
+            "type": "string",
+            "description": "Gemini TTS only delivery instructions."
+          },
+          "instrumental": {
+            "type": "boolean",
+            "description": "Music models only."
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Length in seconds (BYOK and demo; hosted lengths are quote_media settings)."
+          },
+          "videoSourceStartFrame": {
+            "type": "integer",
+            "description": "Start frame."
+          },
+          "videoSourceEndFrame": {
+            "type": "integer",
+            "description": "End frame."
+          },
+          "videoSourceMediaRef": {
+            "type": "string",
+            "description": "Score this video asset."
+          },
+          "quoteId": {
+            "type": "string",
+            "description": "Accepted quote_media id. Required for hosted generation."
+          },
+          "maxCredits": {
+            "type": "integer",
+            "description": "Optional accepted spend cap; the submit fails when the quote exceeds it."
+          },
+          "settings": {
+            "type": "object",
+            "description": "Must match the quoted settings when given."
+          },
+          "inputs": {
+            "type": "array",
+            "description": "Must match the quoted inputs when given.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "Input role."
+                },
+                "mediaRef": {
+                  "type": "string",
+                  "description": "Asset ID."
+                }
+              },
+              "required": [
+                "role",
+                "mediaRef"
+              ]
+            }
+          },
+          "folder": {
+            "type": "string",
+            "description": "Folder path."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "upscale_media",
+      "description": "Upscales an existing video or image asset. It costs the user real money with a real provider (Temno credits when hosted, their own provider\u0027s bill on their key), so call it only after the user says yes to your proposal. Hosted generation is quote-only: call quote_media first, show its credits in the proposal, and pass its quoteId; mediaRef must then be the quoted source. BYOK and demo take the direct arguments.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mediaRef": {
+            "type": "string",
+            "description": "Asset ID to upscale. Required for BYOK and demo; with a quoteId it may be omitted, or must be the quoted source."
+          },
+          "model": {
+            "type": "string",
+            "description": "Upscaler model ID."
+          },
+          "operation": {
+            "type": "string",
+            "description": "Must match the quoted operation when given."
+          },
+          "quoteId": {
+            "type": "string",
+            "description": "Accepted quote_media id. Required for hosted generation."
+          },
+          "maxCredits": {
+            "type": "integer",
+            "description": "Optional accepted spend cap; the submit fails when the quote exceeds it."
+          },
+          "settings": {
+            "type": "object",
+            "description": "Must match the quoted settings when given."
+          },
+          "inputs": {
+            "type": "array",
+            "description": "Must match the quoted inputs when given.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "Input role."
+                },
+                "mediaRef": {
+                  "type": "string",
+                  "description": "Asset ID."
+                }
+              },
+              "required": [
+                "role",
+                "mediaRef"
+              ]
+            }
+          },
+          "sourceClipId": {
+            "type": "string",
+            "description": "Source clip ID."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "generate_google",
+      "description": "Windows alias for generate_image or generate_video on BYOK (Convex/HTTP) or demo generation; hosted generation uses quote_image or quote_media instead. Not a Google cloud generation API. On BYOK it bills the user\u0027s own provider, so call it only after the user says yes to your proposal.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Media type.",
+            "enum": [
+              "image",
+              "video"
+            ]
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Prompt details."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model ID from list_models."
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "Aspect ratio."
+          },
+          "resolution": {
+            "type": "string",
+            "description": "Resolution quality preset.",
+            "enum": [
+              "720p",
+              "1080p",
+              "2k",
+              "4k"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "folder": {
+            "type": "string",
+            "description": "Destination folder path."
+          }
+        },
+        "required": [
+          "type",
+          "prompt"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "apply_style",
+      "description": "Applies a saved text style preset.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "styleId": {
+            "type": "string",
+            "description": "Preset name."
+          },
+          "clipIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "captionGroupId": {
+            "type": "string",
+            "description": "Caption group ID."
+          }
+        },
+        "required": [
+          "styleId"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "save_text_style",
+      "description": "Saves a named, reusable text style preset.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Preset name."
+          },
+          "clipIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "captionGroupId": {
+            "type": "string",
+            "description": "Caption group ID."
+          },
+          "fontName": {
+            "type": "string",
+            "description": "Font name."
+          },
+          "fontSize": {
+            "type": "number",
+            "description": "Canvas points."
+          },
+          "isBold": {
+            "type": "boolean",
+            "description": "Bold."
+          },
+          "isItalic": {
+            "type": "boolean",
+            "description": "Italic."
+          },
+          "color": {
+            "type": "string",
+            "description": "Text color hex."
+          },
+          "alignment": {
+            "type": "string",
+            "description": "Text alignment.",
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ]
+          },
+          "borderColor": {
+            "type": "string",
+            "description": "Text outline hex; enables outline."
+          },
+          "backgroundColor": {
+            "type": "string",
+            "description": "Text box fill hex; enables fill."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_text_styles",
+      "description": "Lists saved text style presets.",
+      "parameters": {
+        "type": "object"
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "remove_text_style",
+      "description": "Deletes a saved text style preset by ID or name.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "styleId": {
+            "type": "string",
+            "description": "Preset name or ID."
+          }
+        },
+        "required": [
+          "styleId"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "save_export_preset",
+      "description": "Saves a named, reusable export configuration.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Preset name."
+          },
+          "codec": {
+            "type": "string",
+            "description": "Codec.",
+            "enum": [
+              "H.264",
+              "H.265",
+              "ProRes"
+            ]
+          },
+          "resolution": {
+            "type": "string",
+            "description": "Resolution.",
+            "enum": [
+              "720p",
+              "1080p",
+              "2K",
+              "4K",
+              "Match Timeline"
+            ]
+          },
+          "maxRenderQuality": {
+            "type": "boolean",
+            "description": "Higher quality target on the software H.264 and H.265 encoders (x264, x265) when bitrateMbps is not set: CRF 18 instead of 23. No effect on hardware encoders (NVENC, QSV, AMF), OpenH264 or ProRes."
+          },
+          "maxBitDepth": {
+            "type": "boolean",
+            "description": "Exports HEVC 10-bit tagged HLG, whatever codec says. The picture is rendered in 8-bit SDR and converted, not processed at higher precision."
+          },
+          "bitrateMbps": {
+            "type": "number",
+            "description": "Bitrate in Mbps."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_export_presets",
+      "description": "Lists saved export presets.",
+      "parameters": {
+        "type": "object"
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "remove_export_preset",
+      "description": "Deletes a saved export preset by ID or name.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "presetId": {
+            "type": "string",
+            "description": "Preset name or ID."
+          }
+        },
+        "required": [
+          "presetId"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "save_project_template",
+      "description": "Saves the current project as a named template.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Template name."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_project_templates",
+      "description": "Lists saved project templates.",
+      "parameters": {
+        "type": "object"
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "remove_project_template",
+      "description": "Deletes a saved project template by name.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Template name."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "send_feedback",
+      "description": "Report an agent limitation or bug to the Temno team.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Category.",
+            "enum": [
+              "missing_capability",
+              "wrong_result",
+              "confusing_ux",
+              "failure",
+              "suggestion"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "description": "Summary line."
+          },
+          "details": {
+            "type": "string",
+            "description": "Paraphrased details."
+          },
+          "severity": {
+            "type": "string",
+            "description": "Severity.",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          }
+        },
+        "required": [
+          "category",
+          "summary"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "read_skill",
+      "description": "Load the full instructions for one of the skills listed under # Skills in your system prompt.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The skill id."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    }
+  }
+]

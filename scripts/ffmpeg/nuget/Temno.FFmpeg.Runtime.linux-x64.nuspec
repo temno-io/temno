@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- WP-425. Packed by scripts/ffmpeg/pack-ffmpeg-nuget.ps1 -Rid linux-x64, which stages the files below and supplies
+     $version$ from scripts/ffmpeg/Temno.FFmpeg.linux-x64.targets. -->
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata minClientVersion="5.10">
+    <id>Temno.FFmpeg.Runtime.linux-x64</id>
+    <version>$version$</version>
+    <title>FFmpeg $version$ for Temno (Linux x64, GPL, shared)</title>
+    <authors>Temno</authors>
+    <license type="expression">GPL-3.0-or-later</license>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectUrl>https://temno.io</projectUrl>
+    <readme>README.md</readme>
+    <description>FFmpeg 9.1 for Linux x64, built for Temno's hosted services from the signed release tarball: the same source and exclusions as Temno.FFmpeg.Runtime.win-x64. Only the file and pipe protocols are enabled. Holds ffmpeg, ffprobe and seven FFmpeg shared libraries under ffmpeg/bin and ffmpeg/lib. The source/ folder holds the recipe that rebuilds them byte for byte.</description>
+    <copyright>© 2026 Temno. FFmpeg and the libraries it links keep their own copyrights.</copyright>
+    <tags>ffmpeg ffprobe native linux-x64 gpl temno</tags>
+  </metadata>
+  <files>
+    <file src="ffmpeg\**" target="ffmpeg" />
+    <file src="README.md" target="" />
+    <file src="THIRD-PARTY-NOTICES.md" target="" />
+    <file src="FFMPEG-SOURCE-NOTICES.md" target="" />
+    <file src="source\**" target="source" />
+  </files>
+</package>

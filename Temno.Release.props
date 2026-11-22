@@ -1,0 +1,7 @@
+<Project>
+  <!-- Temno 0.1.0.0. A build from source compares the update feed with this version and stops naming a release
+       it already has. Written by the release export; edit nothing here. -->
+  <PropertyGroup>
+    <TemnoAppVersion>0.1.0.0</TemnoAppVersion>
+  </PropertyGroup>
+</Project>

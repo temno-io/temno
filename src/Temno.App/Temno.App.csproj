@@ -1,0 +1,168 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>Temno.App</RootNamespace>
+    <AssemblyName>Temno.App</AssemblyName>
+    <!-- File Explorer / taskbar icon for the unpackaged .exe -->
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Product>Temno</Product>
+    <AssemblyTitle>Temno</AssemblyTitle>
+    <Company>Temno</Company>
+    <Authors>Temno</Authors>
+    <Version>0.1.0</Version>
+    <FileVersion>0.1.0.0</FileVersion>
+    <InformationalVersion>0.1.0-windows</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <!-- WP-406: restore refuses a package whose bytes differ from packages.lock.json. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <WhisperModelPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\tools\whisper\ggml-base.en.bin'))</WhisperModelPath>
+    <VcRuntimeDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\tools\vcruntime'))</VcRuntimeDir>
+    <Platforms>x86;x64;ARM64</Platforms>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</RuntimeIdentifier>
+    <PublishProfile Condition="Exists('Properties\PublishProfiles\win-$(Platform).pubxml')">win-$(Platform).pubxml</PublishProfile>
+    <UseWinUI>true</UseWinUI>
+    <WinUISDKReferences>false</WinUISDKReferences>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <!-- Unpackaged for local dev / agent smoke runs; installer (WP-48) can switch to MSIX. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- This app uses no Main/Singleton Windows App SDK APIs. Self-contained unpackaged builds
+         must not try to register the framework-dependent Deployment Manager at startup. -->
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>A native Windows video editor you can edit by hand or hand to an agent.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\SplashScreen.scale-200.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\LockScreenLogo.scale-200.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\Square150x150Logo.scale-200.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\Square44x44Logo.scale-200.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\Square44x44Logo.targetsize-48_altform-lightunplated.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\StoreLogo.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\TemnoWordmark.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <!-- WP-446: Google's pre-approved Sign in with Google button (signin-assets.zip, Light pill, 4x), unmodified. -->
+    <Content Include="Assets\GoogleSignInLightPill.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\Wide310x150Logo.scale-200.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\icons\*.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\Fonts\*.ttf" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\Fonts\*-OFL.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+    <ProjectCapability Include="Msix" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.WinApp" Version="0.6.1" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.8.1" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
+    <!-- WindowsAppSDK 2.4 brings its own ONNX runtime through this package. Temno.Media owns
+         the runtime version used by visual search, so exclude the unused duplicate MSIX payload.
+         Keep this pin aligned with the WindowsAppSDK dependency graph when that SDK is upgraded. -->
+    <PackageReference Include="Microsoft.Windows.AI.MachineLearning" Version="2.1.74"
+                      ExcludeAssets="all" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Temno.Core\Temno.Core.csproj" />
+    <ProjectReference Include="..\Temno.Media\Temno.Media.csproj" />
+    <ProjectReference Include="..\Temno.Mcp\Temno.Mcp.csproj" />
+    <ProjectReference Include="..\Temno.Generation\Temno.Generation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(WhisperModelPath)')">
+    <!-- Keep this Link aligned with WhisperModelStore.BundledFolderName/DefaultFileName and
+         build-msix.ps1's whisperPackageEntry; the finished-package hash gate enforces the payload. -->
+    <Content Include="$(WhisperModelPath)"
+             Link="whisper\ggml-base.en.bin"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="RequireWhisperModelForMsix"
+          BeforeTargets="PrepareForBuild"
+          Condition="'$(WindowsPackageType)' == 'MSIX'">
+    <Error Condition="!Exists('$(WhisperModelPath)')"
+           Text="MSIX packaging requires ggml-base.en.bin. Run scripts\ensure-whisper-model.ps1 first." />
+  </Target>
+
+  <!-- WP-406: FFmpeg (9.1-temno1 since WP-442) is the NuGet package Temno.FFmpeg.Runtime.win-x64. Its build file places ffmpeg\
+       beside the app, in the build output, publish folder and MSIX; this import pins every file, and the lock file
+       pins the package's bytes. -->
+  <Import Project="..\..\scripts\ffmpeg\Temno.FFmpeg.targets" />
+
+  <!-- The notices the About box opens. -->
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)..\..\THIRD-PARTY-NOTICES.md"
+             Link="THIRD-PARTY-NOTICES.md"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildThisFileDirectory)..\..\LICENSE"
+             Link="LICENSE"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildThisFileDirectory)..\..\NOTICE"
+             Link="NOTICE"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- WP-309: the built-in skills, in a skills folder beside the app (SkillStore.DefaultBuiltInRoot). Only
+       SKILL.md is read, so only SKILL.md ships. -->
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)..\..\skills\**\SKILL.md"
+             Link="skills\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- WP-264: app-local Visual C++ 2015-2022 runtime. build-msix.ps1 copies these
+       before the MSIX build; the package gate rejects a PE that imports one and does not ship it. -->
+  <ItemGroup Condition="Exists('$(VcRuntimeDir)\vcruntime140.dll')">
+    <Content Include="$(VcRuntimeDir)\vcruntime140.dll" Link="vcruntime140.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(VcRuntimeDir)\vcruntime140_1.dll" Link="vcruntime140_1.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(VcRuntimeDir)\msvcp140.dll" Link="msvcp140.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(VcRuntimeDir)\msvcp140_1.dll" Link="msvcp140_1.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(VcRuntimeDir)\vcomp140.dll" Link="vcomp140.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="RequireVcRuntimeForMsix"
+          BeforeTargets="PrepareForBuild"
+          Condition="'$(WindowsPackageType)' == 'MSIX'">
+    <Error Condition="!Exists('$(VcRuntimeDir)\vcruntime140.dll') Or !Exists('$(VcRuntimeDir)\vcruntime140_1.dll') Or !Exists('$(VcRuntimeDir)\msvcp140.dll') Or !Exists('$(VcRuntimeDir)\msvcp140_1.dll') Or !Exists('$(VcRuntimeDir)\vcomp140.dll')"
+           Text="MSIX packaging requires the app-local VC++ runtime. Run scripts\build-msix.ps1, which copies it first." />
+  </Target>
+
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\tools\siglip\siglip2-base-patch16-256.onnx')">
+    <Content Include="$(MSBuildThisFileDirectory)..\..\tools\siglip\siglip2-base-patch16-256.onnx"
+             Link="siglip\siglip2-base-patch16-256.onnx"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+    <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
+    <!-- Project/MCP payloads intentionally use dynamic JSON shapes. Do not trim release builds
+         until their serializers have source-generated metadata and an end-to-end trim test. -->
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+</Project>

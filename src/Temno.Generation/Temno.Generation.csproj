@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Temno.Generation</RootNamespace>
+    <Description>Cloud generation clients and job polling.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Temno.Core\Temno.Core.csproj" />
+  </ItemGroup>
+</Project>

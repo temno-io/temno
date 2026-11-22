@@ -1,0 +1,21 @@
+root = true
+
+[*.cs]
+# CA2007 — do not await a Task without ConfigureAwait.
+#
+# Off by default here: it is correct for UI code (Temno.App) to resume on the dispatcher, and the
+# MCP host's own listen loop already runs on pool threads. It is turned into an ERROR for the
+# library projects below, which are called synchronously from the WinUI thread through the MCP tool
+# surface. An await there that captures the DispatcherQueueSynchronizationContext posts its
+# continuation to a thread the caller is blocking in GetAwaiter().GetResult() — a permanent
+# app-wide hang. See docs/RENDER_AUDIT.md.
+dotnet_diagnostic.CA2007.severity = none
+
+[src/Temno.Media/**.cs]
+dotnet_diagnostic.CA2007.severity = error
+
+[src/Temno.Core/**.cs]
+dotnet_diagnostic.CA2007.severity = error
+
+[src/Temno.Generation/**.cs]
+dotnet_diagnostic.CA2007.severity = error

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Temno.App.Controls.AiEditControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:shared="using:Temno.App.Controls.Shared">
+
+    <shared:SectionHeader x:Name="AiEditSection" Title="AI Edit" SectionId="inspector.aiEdit">
+        <shared:SectionHeader.SectionContent>
+            <StackPanel Spacing="{StaticResource AppTheme.Spacing.SmMd}">
+                <Border
+                    x:Name="FakeBanner"
+                    Background="{StaticResource AppTheme.Background.Raised}"
+                    BorderBrush="{StaticResource AppTheme.Status.Warning}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource AppTheme.CornerRadius.Sm}"
+                    Padding="{StaticResource AppTheme.Padding.Sm}"
+                    Visibility="Collapsed">
+                    <TextBlock
+                        FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                        Foreground="{StaticResource AppTheme.Status.Warning}"
+                        Text="Demo generation is on: sample media, not production output."
+                        TextWrapping="WrapWholeWords" />
+                </Border>
+
+                <TextBlock
+                    x:Name="UnconfiguredLabel"
+                    FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text="Generation needs a Temno API key. Add one in Settings → Generation."
+                    TextWrapping="WrapWholeWords"
+                    Visibility="Collapsed" />
+
+                <TextBox
+                    x:Name="PromptBox"
+                    AcceptsReturn="True"
+                    Header="Prompt"
+                    MinHeight="64"
+                    PlaceholderText="Describe the image or video"
+                    TextWrapping="Wrap" />
+
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                    <Button
+                        x:Name="GenerateImageBtn"
+                        Click="GenerateImage_Click"
+                        Content="Generate image"
+                        FontSize="{StaticResource AppTheme.FontSize.Sm}" />
+                    <Button
+                        x:Name="GenerateVideoBtn"
+                        Click="GenerateVideo_Click"
+                        Content="Generate video"
+                        FontSize="{StaticResource AppTheme.FontSize.Sm}" />
+                </StackPanel>
+                <Button
+                    x:Name="EditImageBtn"
+                    HorizontalAlignment="Stretch"
+                    Click="EditImage_Click"
+                    Content="Edit image…"
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    Visibility="Collapsed" />
+                <Button
+                    x:Name="UpscaleBtn"
+                    HorizontalAlignment="Stretch"
+                    Click="Upscale_Click"
+                    Content="Upscale"
+                    FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                    Visibility="Collapsed" />
+
+                <TextBlock
+                    x:Name="StatusLabel"
+                    FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                    Foreground="{StaticResource AppTheme.Text.Tertiary}"
+                    Text=""
+                    TextWrapping="WrapWholeWords" />
+                <TextBlock
+                    x:Name="ErrorLabel"
+                    FontSize="{StaticResource AppTheme.FontSize.Xs}"
+                    Foreground="{StaticResource AppTheme.Status.Error}"
+                    Text=""
+                    TextWrapping="WrapWholeWords"
+                    Visibility="Collapsed" />
+
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.Sm}">
+                    <Button
+                        x:Name="CancelBtn"
+                        Click="Cancel_Click"
+                        Content="Cancel"
+                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                        IsEnabled="False" />
+                    <Button
+                        x:Name="RetryBtn"
+                        Click="Retry_Click"
+                        Content="Retry"
+                        FontSize="{StaticResource AppTheme.FontSize.Sm}"
+                        IsEnabled="False" />
+                </StackPanel>
+            </StackPanel>
+        </shared:SectionHeader.SectionContent>
+    </shared:SectionHeader>
+</UserControl>

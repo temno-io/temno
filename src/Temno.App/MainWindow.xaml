@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="Temno.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:shared="using:Temno.App.Controls.Shared"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="Temno"
+    mc:Ignorable="d">
+
+    <Grid Background="{StaticResource AppTheme.Background.Base}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--
+          Mac TitleBar model (inverted for Windows caption buttons on the right):
+          Home: quiet brand left · empty center · caption padding right
+          Editor: page supplies its own title bar via SetTitleBar (see EditorPage.EditorTitleBar)
+        -->
+        <Grid
+            x:Name="AppTitleBar"
+            Height="{StaticResource AppTheme.ComponentSize.HeaderHeight}"
+            Background="{StaticResource AppTheme.Background.Surface}"
+            BorderBrush="{StaticResource AppTheme.Border.Subtle}"
+            BorderThickness="0,0,0,1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="{StaticResource AppTheme.Grid.CaptionButtonsWidth}" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppTheme.Spacing.SmMd}"
+                        Margin="{StaticResource AppTheme.Padding.LeftLgXl}" VerticalAlignment="Center">
+                <Image Width="{StaticResource AppTheme.IconSize.Standard}" Height="{StaticResource AppTheme.IconSize.Standard}" Source="ms-appx:///Assets/icons/home.svg" />
+                <TextBlock Text="Projects" FontSize="{StaticResource AppTheme.FontSize.Md}" VerticalAlignment="Center"
+                           Foreground="{StaticResource AppTheme.Text.Primary}" />
+            </StackPanel>
+            <Border x:Name="HomeDragRegion" Grid.Column="1" Background="Transparent" />
+            <Button Grid.Column="2" Click="HomeSettings_Click" AutomationProperties.Name="Settings"
+                    ToolTipService.ToolTip="Settings" Background="Transparent" BorderThickness="0"
+                    Width="{StaticResource AppTheme.ComponentSize.ChromeButtonWidth}" Padding="{StaticResource AppTheme.Padding.None}">
+                <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE713;"
+                          FontSize="{StaticResource AppTheme.IconSize.Standard}" Foreground="{StaticResource AppTheme.Text.Secondary}" />
+            </Button>
+        </Grid>
+
+        <Frame x:Name="RootFrame" Grid.Row="1" />
+    </Grid>
+</Window>
